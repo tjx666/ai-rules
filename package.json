@@ -1,0 +1,17 @@
+{
+    "name": "ai-rules",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "format": "prettier --write ."
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.12.4",
+    "devDependencies": {
+        "@yutengjing/prettier-config": "^2.0.0",
+        "prettier": "^3.6.2"
+    }
+}
