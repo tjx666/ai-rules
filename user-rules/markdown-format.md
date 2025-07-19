@@ -34,7 +34,7 @@ npm run dev
 
 ### ❌ 错误格式
 
-```
+```plaintext
 // 没有指定语言标识符
 const user = { name: 'Alice', age: 30 };
 ```
