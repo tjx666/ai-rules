@@ -1,0 +1,73 @@
+[
+    // perfect shift+enter to send a new line in terminal
+    {
+        "key": "shift+enter",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": { "text": "\u001B\u000A" },
+        "when": "terminalFocus"
+    },
+
+    // submit prompt with ultrathink tag to trigger extendthinking
+    {
+        "key": "shift+cmd+enter",
+        "when": "terminalFocus",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                {
+                    "command": "workbench.action.terminal.sendSequence",
+                    "args": {
+                        "text": "\u001B\u000A"
+                    }
+                },
+                // need install YuTengjing.vscode-mcp-bridge vscode extension
+                {
+                    "command": "vscode-mcp-bridge.sleep",
+                    "args": [0.1]
+                },
+                {
+                    "command": "workbench.action.terminal.sendSequence",
+                    "args": {
+                        "text": "\u001B\u000A"
+                    }
+                },
+                {
+                    "command": "vscode-mcp-bridge.sleep",
+                    "args": [0.1]
+                },
+                {
+                    "command": "workbench.action.terminal.sendSequence",
+                    "args": {
+                        "text": "[ultrathink]"
+                    }
+                },
+                {
+                    "command": "vscode-mcp-bridge.sleep",
+                    "args": [0.1]
+                },
+                {
+                    "command": "workbench.action.terminal.sendSequence",
+                    "args": {
+                        "text": "\n"
+                    }
+                }
+            ]
+        }
+    },
+
+    // use claude code vscode extension to start claude code and move to terminal panel
+    {
+        "key": "alt+n",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                {
+                    "command": "claude-code.runClaude.keyboard"
+                },
+                {
+                    "command": "workbench.action.terminal.moveToTerminalPanel"
+                }
+            ]
+        }
+    }
+]

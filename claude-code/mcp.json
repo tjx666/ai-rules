@@ -1,0 +1,38 @@
+{
+    "mcpServers": {
+        "grep": {
+            "type": "http",
+            "url": "https://mcp.grep.app"
+        },
+        "vscode-mcp": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@vscode-mcp/vscode-mcp-server@latest"],
+            "env": {}
+        },
+        "sequential-thinking": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["@modelcontextprotocol/server-sequential-thinking@latest"],
+            "env": {}
+        },
+        "context7": {
+            "command": "npx",
+            "args": ["-y", "@upstash/context7-mcp"]
+        },
+        "chrome-mcp-server": {
+            "type": "http",
+            "url": "http://127.0.0.1:12306/mcp"
+        },
+        "ultra-mcp": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "ultra-mcp@latest"],
+            "env": {}
+        },
+        "deepwiki": {
+            "type": "http",
+            "url": "https://mcp.deepwiki.com/mcp"
+        }
+    }
+}
