@@ -1,0 +1,41 @@
+{
+    "$schema": "https://json.schemastore.org/claude-code-settings.json",
+    "includeCoAuthoredBy": false,
+    "model": "opusplan",
+    "env": {
+        "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+        "CLAUDE_CODE_ENABLE_UNIFIED_READ_TOOL": "1",
+        "DISABLE_BUG_COMMAND": "1",
+        "DISABLE_ERROR_REPORTING": "1",
+        "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
+        "DISABLE_TELEMETRY": "1",
+        "ENABLE_BACKGROUND_TASKS": "1",
+        "FORCE_AUTO_BACKGROUND_TASKS": "1"
+    },
+    "hooks": {
+        "UserPromptSubmit": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "sh ~/.claude/hooks/you_are_absolutely_right.sh"
+                    }
+                ]
+            }
+        ],
+        "PreToolUse": [
+            {
+                "matcher": "Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "jq -r '\"\\(.tool_input.command) - \\(.tool_input.description // \"No description\")\"' >> ~/.claude/bash-command-log.txt"
+                    }
+                ]
+            }
+        ]
+    },
+    "feedbackSurveyState": {
+        "lastShownTime": 1754054175696
+    }
+}
