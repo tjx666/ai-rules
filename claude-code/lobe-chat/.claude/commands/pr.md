@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git:*), Bash(gh:*), Bash(jq:*), Bash(wc:*), Bash(awk:*), Bash(sed:*), Bash(echo:*), Base(print:*)
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(jq:*), Bash(wc:*), Bash(awk:*), Bash(sed:*), Bash(echo:*), Base(print:*), Base(cat:*)
 description: Create a PR for the current branch
 ---
 
@@ -14,6 +14,7 @@ description: Create a PR for the current branch
 - Default branch: !`git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@refs/remotes/origin/@@' || echo "main"`
 - Recent commits (to inspire the pr title): !`git log --oneline -5`
 - Change summary: !`git diff --stat --stat-count=20 origin/main..HEAD 2>/dev/null || echo "No diff available"`
+- PR template: !`cat .github/PULL_REQUEST_TEMPLATE.md`
 
 ## Steps
 
@@ -24,7 +25,7 @@ description: Create a PR for the current branch
    - Otherwise: `git push origin $(git branch --show-current)`
 3. **Create PR**: Use `gh pr create` with:
    - Title following format: `<gitmoji> <type>(<scope>): <description>`
-   - **🚨 Critical**: Body based on @../../.github/PULL_REQUEST_TEMPLATE.md and fill checkboxes
+   - **🚨 Critical**: Body based on PR template and fill checkboxes
 4. After PR created, use `gh pr view --web` to open the PR in browser
 
 ## Notes

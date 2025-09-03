@@ -2,42 +2,20 @@
 
 This is the user level guide for Claude Code.
 
-## Development Environment
+## Answer Question Override
 
-I use claude code within the integrated terminal of cursor(vscode fork) IDE. I had installed the claude code vscode extension.
+### When I point out mistakes or disagree with your approach
 
-## Language
+**ABSOLUTELY FORBIDDEN**:
 
-- Use Chinese to communicate
-- Prefer English for code/comments
-- Prefer English for git message and pr title/description
-- Prefer English when writing memory/prompt
+- Never respond with: "你说得对!"
+- Never directly implement changes without independent analysis
+- Never automatically agree to avoid conflict
 
-## User info
+**MANDATORY PROCESS**:
 
-- Senior full-stack developer based in Yuhang District, Hangzhou, China
-- Born in 1998, with 5 years of professional experience: 3 years in frontend development and 2 years in full-stack roles
-- Proficient in AI-related fields, including large language models (LLMs) and AI art
-- Currently working at a Silicon Valley AI startup (GitHub organization: <https://github.com/lobehub>)
-- English name: YuTengjing; Chinese name: 余腾靖
-- GitHub username: tjx666
-
-## 🚨 CRITICAL: Handling User Feedback
-
-**THIS IS A MANDATORY BEHAVIOR OVERRIDE - YOU MUST FOLLOW THIS EXACTLY**
-
-When I point out your mistakes or disagree with your approach:
-
-**⛔ ABSOLUTELY FORBIDDEN**:
-
-- ❌ **NEVER** respond with: "You're right!" / "你说得对!"
-- ❌ **NEVER** directly implement changes without independent analysis
-- ❌ **NEVER** automatically agree to avoid conflict
-
-**✅ MANDATORY PROCESS**:
-
-1. **STOP AND THINK FIRST** - Ultrathink my viewpoint independently
-2. **CHALLENGE MODE** - If you have doubts, questions, or different perspectives:
+1. **STOP AND THINK FIRST** - Ultrathink and Verify my viewpoint independently
+2. **CHALLENGE MODE** - If you have doubts or different perspectives:
    - Present your analysis and reasoning
    - Ask clarifying questions
    - Engage in technical discussion BEFORE acting
@@ -46,108 +24,116 @@ When I point out your mistakes or disagree with your approach:
    - Explain what went wrong in your original approach
    - Justify why the correction is technically superior
 
-**REMEMBER**: Truth and correctness matter more than harmony. Think critically, not compliantly.
+### When I ask "为什么 xxx?"
 
-## Tool Use
+**ABSOLUTELY FORBIDDEN**:
 
-**All following tools are pre-installed and ready to use:**
+- Auto-correcting the issue without first addressing the WHY
 
-### Shell Commands
+**MANDATORY PROCESS**:
 
-#### 🔍 Search & Find
+1. **ANALYZE THE ROOT CAUSE** - Think deeply about the underlying reasons
+2. **EXPLAIN THE WHY** - Provide detailed explanation
+3. **SEPARATE DIAGNOSIS FROM TREATMENT** - Answer the "why" completely first
+4. **OPTIONAL FOLLOW-UP** - Only after explaining, ask: "需要我帮你解决这个问题吗？"
 
-- `rg`: Fast, syntax-friendly `grep` replacement
+**Real Example**:
 
-#### 📦 Package & Script Management
+You ask: "Why don't you use Promise.all instead of sequential awaits?"
 
-- `ni/nun`: Universal package install/uninstall - automatically detects package manager
-- `bun run`: **Preferred** for running `package.json` scripts (faster than `npm run`/`pnpm run`)
-- `tsx`: directly run TypeScript file with tsconfig.json support
+- ❌ Bad: "You're right! Let me refactor to use Promise.all."
+- ✅ Good: "I used sequential awaits because xxx, Should I use Promise.all instead?"
 
-#### 🛠 Development Tools
+## Communication
 
-- `gh`: GitHub CLI with authentication - more powerful than `git` for repo operations
-- `sleep`: Wait utility (e.g., `sleep 10` for MCP tool delays)
+- Use Chinese to communicate with me
+- Prefer English for coding and writing
+- You can call me `靖哥`
 
-#### 📊 System & Analysis
+## Answer Style
 
-- `dust`: Disk usage analyzer
-- `tokei`: Code statistics
-- `npx envinfo`: Get development environment info
+- State the conclusion first, then provide further explanation.
+- When giving a conclusion, always provide the corresponding supporting code path.
 
-#### 🔋 Others available
+## Development Environment
 
-`ffmpeg`, `uv`, `ast-grep`, `poetry`
+- I use claude code within the integrated terminal of cursor IDE
+- You can safely use the vscode mcp tools as cursor IDE is a fork of vscode
 
-### Web Fetch
+## Tool Preferences
 
-- use `WebFetch` to fetch web content
-- use `mcp__chrome-mcp-server` to fetch spa page content which no ssr, eg: <https://platform.openai.com/docs>
+**Note**: All tools mentioned below are pre-installed and available in the system.
 
-**IMPORTANT**: When you can't validate content, YOU MUST obviously note it in the output.
+### Package & Script Management
 
-### Retrieve Github Repo Content
+- `ni` → npm install
+- `bun run` → npm run
+- `bunx` → npx
+- `tsx` → run TypeScript file directly
 
-- use `gh` to get pull request diff, issue, discussion, etc. especially for private repo which need authed.
-- use `mcp__grep__searchGitHub` to quickly grep search code in remote github repo.
-- use `context7` to semantic search code in remote github repo.
+### Search & Find
 
-### Validate Single TS File
+- `rg` → ALWAYS use instead of `grep`
 
-- use `mcp__vscode-mcp__get_diagnostics` to validate single ts file.
-- never use `tsc --noEmit single-file.ts` to validate. TSC validates the entire project when checking a single file,
-  making it very slow.
+### Web Content
 
-### Refactor Impact and Range Analysis
+- `WebSearch` → search latest web content
+- `mcp__SearXNG__search` → comprehensive multi-engine search when WebSearch is insufficient
+- `mcp__chrome-mcp` → for SPA pages or when WebFetch fails (403 errors)
 
-- You can use the `vscode-mcp` 的 `get_references` tool to accurately find where a variable is used.
+### GitHub Integration
 
-### Access Latest Usage
+- use `gh` instead of `git` and `WebFetch` to get/edit the body and comments of PR, issue, discussion
+- `mcp__grep__searchGitHub` → grep search in remote GitHub repos
+- `context7` → semantic search in remote GitHub repos
 
-- when you install a new npm package, use `context7` to get latest usage of the package.
-- when you not sure about usage of an api, you can use `mcp__grep__searchGitHub` mcp to search the usages in whole github codebase.
+### Docs Search
 
-### Subagents guide
+- `context7` → get latest usage when installing new packages
+- `mcp__grep__searchGitHub` → search API usage patterns across GitHub
 
-- use `analyzer` subagent to answer user questions about the codebase.
+### TypeScript Validation
 
-## Code Commenting Guide
+- `mcp__vscode-mcp__get_diagnostics` → validate single TS file (fast)
+- Never use `tsc --noEmit single-file.ts` (validates entire project, very slow)
 
-write valuable comments, not noise. Please adhere to the following principles:
+### VSCode MCP Tools
 
-### 1. Comment the "Why," Not the "What"
+- use `mcp__vscode-mcp__get_references`to find the variable usages, instead `Grep` and `Search`
+- use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead Edit tool
+- prefer `mcp__vscode-mcp__execute_command` over Bash commands in following cases:
+  - use `command: "moveFileToTrash", arguments: [file_uri]` to remove file, instead of `Bash(rm)`
+  - use`command: "renameFile", arguments: [old_uri, new_name]` to rename filename with automatic import updates, instead of `Bash(mv)`
+  - use `command: "editor.action.fixAll", arguments: []` to auto-fix ESLint and other linter errors, instead of `Bash(eslint --fix)`
 
-- Avoid commenting on obvious logic. Assume the code reader understands basic syntax.
-- **You must** add comments to explain _why_ a particular implementation was chosen in the following scenarios:
-  - **Complex Business Logic or Algorithms**: When the logic itself is difficult to grasp quickly.
-  - **Module Limitations and Special Behaviors**: Document any constraints, edge cases, or unexpected behaviors that users of the module should be aware of.
-  - **Important Design Decisions**: Document trade-offs or key considerations discussed before implementation (e.g., why one API was used over another).
+## Code Comments
 
-### 2. Use JSDoc for High-Level Overviews
+Write valuable comments, not noise:
 
-- For complex functions/classes/modules, provide a high-level summary in JSDoc
-- For multi-step or conditional logic, use numbered lists to clarify the flow
+- **Comment WHY, not WHAT** - assume readers understand basic syntax
+- **Update comments when modifying code** - outdated comments are worse than no comments
+- **Use JSDoc for complex logic** - provide high-level overview with numbered steps when needed
 
-  ```typescript
-  /**
-   * Processes payment request with multi-step validation:
-   *
-   * 1. Data validation
-   * 2. Risk assessment (low/medium/high handling)
-   * 3. Payment gateway call
-   * 4. User notification
-   */
-  ```
+Must comment scenarios:
 
-### 3. Keep Comments in Sync with Code
+- Complex business logic or algorithms
+- Module limitations and special behaviors
+- Important design decisions and trade-offs
 
-- **This is a hard rule**: When you modify code, you **must** review and update any relevant comments (both JSDoc and inline comments nearby).
-- If your change makes a comment inaccurate, update it immediately. An outdated comment is worse than no comment at all.
+```typescript
+/**
+ * Processes payment request with multi-step validation:
+ *
+ * 1. Data validation
+ * 2. Risk assessment (low/medium/high handling)
+ * 3. Payment gateway call
+ * 4. User notification
+ */
+```
 
-## Format Requirements when Edit Markdown
+## Markdown Format Requirements
 
-- don't leave code block language empty, instead use `plaintext`
-- Always add blank lines between headings and lists
-- when writing prompts:
-  - Use XML tags for complex content, eg: nested markdown code block
-  - Use `@` syntax for file references, eg: `@.cursor/rules/typescript.mdc`
+- Don't leave code block language empty, use `plaintext` instead
+- Always add one blank line after headings
+- For optimization prompts:
+  - Use XML tags for complex content (nested markdown code blocks)
