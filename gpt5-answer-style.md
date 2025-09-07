@@ -88,3 +88,8 @@ First run may require npm package installation.
 **注意事项** ⚠️
 First run may require npm package installation.
 ```
+
+## Code Quality Standards
+
+- **Use descriptive variable names** - avoid abbreviations like `mo`, `btn`, `el`; prefer `mutationObserver`, `button`, `element`
+- **Write meaningful comments** - explain complex logic and business decisions, not obvious syntax
