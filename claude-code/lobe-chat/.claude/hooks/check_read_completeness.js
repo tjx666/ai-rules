@@ -2,11 +2,11 @@
 
 /**
  * PostToolUse Hook: Read Tool Completeness Checker (JavaScript Version)
- * 
+ *
  * This hook monitors Read tool usage and enforces complete file reading for small files:
  * - Files < 500 lines: Must be read completely (no offset/limit allowed)
  * - Files < 1000 lines: First read should be complete (no limit on initial read)
- * 
+ *
  * Environment Variables:
  * - HOOK_DEBUG=1: Enable debug logging to .claude/logs/
  */
@@ -21,7 +21,8 @@ const startTime = process.hrtime.bigint();
 const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const LOG_DIR = path.join(PROJECT_DIR, '.claude', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'read_completeness.log');
-const DEBUG = process.env.HOOK_DEBUG === '1';
+// const DEBUG = process.env.HOOK_DEBUG === '1';
+const DEBUG = true;
 
 // Helper function for debug logging
 async function logDebug(message) {
@@ -55,7 +56,7 @@ async function exitWithTime(exitCode, status) {
 async function main() {
   // Read JSON input from stdin
   let inputData = '';
-  
+
   if (process.stdin.isTTY) {
     await logDebug('No stdin data available');
     await exitWithTime(0, 'no-stdin');
@@ -63,7 +64,7 @@ async function main() {
   }
 
   process.stdin.setEncoding('utf8');
-  
+
   process.stdin.on('data', (chunk) => {
     inputData += chunk;
   });
@@ -77,44 +78,49 @@ async function main() {
       }
 
       await logDebug(`Hook triggered with input: ${inputData.substring(0, 200)}...`);
-      
+
       const toolData = JSON.parse(inputData.trim());
-      
+
       // Extract tool input parameters
       const toolInput = toolData.tool_input || {};
       const filePath = toolInput.file_path || '';
       const offset = toolInput.offset;
       const limit = toolInput.limit;
-      
-      // Extract tool response
-      const toolResponse = toolData.tool_response || '';
-      
-      await logDebug(`File: ${filePath}, Offset: ${offset}, Limit: ${limit}`);
-      
-      // Extract total lines from response by finding the last line number
-      // Line numbers appear as "123→" at the start of lines
-      const lineNumberMatches = toolResponse.match(/^\s*(\d+)→/gm);
-      
-      if (!lineNumberMatches || lineNumberMatches.length === 0) {
-        await logDebug('No line numbers found in response');
-        await exitWithTime(0, 'no-line-numbers');
+
+      // Extract tool response metadata
+      const toolResponse = toolData.tool_response || {};
+
+      await logDebug(`Tool response type: ${typeof toolResponse}`);
+      await logDebug(`Tool response keys: ${Object.keys(toolResponse)}`);
+
+      // Check if this is the expected Read tool response structure
+      if (!toolResponse.file || typeof toolResponse.file.totalLines !== 'number') {
+        await logDebug(
+          `Invalid Read tool response structure. Response: ${JSON.stringify(toolResponse)}`,
+        );
+        await exitWithTime(0, 'invalid-structure');
         return;
       }
-      
-      // Get the last line number
-      const lastLineMatch = lineNumberMatches[lineNumberMatches.length - 1];
-      const lastLineNum = parseInt(lastLineMatch.match(/\d+/)[0]);
-      const totalLines = lastLineNum;
-      
-      await logDebug(`Detected total lines: ${totalLines}`);
-      
+
+      const fileInfo = toolResponse.file;
+      const totalLines = fileInfo.totalLines;
+      const readLines = fileInfo.numLines || 0;
+      const startLine = fileInfo.startLine || 1;
+
+      await logDebug(`File: ${filePath}, Offset: ${offset}, Limit: ${limit}`);
+      await logDebug(
+        `Total lines: ${totalLines}, Read lines: ${readLines}, Start line: ${startLine}`,
+      );
+
       // Check reading rules
       const hasOffset = offset !== undefined && offset !== null && offset !== '';
       const hasLimit = limit !== undefined && limit !== null && limit !== '';
       const isPartialRead = hasOffset || hasLimit;
-      
-      await logDebug(`Has offset: ${hasOffset}, Has limit: ${hasLimit}, Is partial: ${isPartialRead}`);
-      
+
+      await logDebug(
+        `Has offset: ${hasOffset}, Has limit: ${hasLimit}, Is partial: ${isPartialRead}`,
+      );
+
       // Rule 1: Files < 500 lines must be read completely
       if (totalLines < 500 && isPartialRead) {
         await logDebug('Rule violation: File < 500 lines with partial read');
@@ -122,7 +128,7 @@ async function main() {
         await exitWithTime(2, 'blocked-rule1');
         return;
       }
-      
+
       // Rule 2: Files < 1000 lines should be read completely on first read
       // (Only check if there's a limit but no offset, indicating first read with limit)
       if (totalLines < 1000 && !hasOffset && hasLimit) {
@@ -131,12 +137,12 @@ async function main() {
         await exitWithTime(2, 'blocked-rule2');
         return;
       }
-      
+
       await logDebug('No rule violations detected');
       await exitWithTime(0, 'success');
-      
     } catch (error) {
       await logDebug(`Error processing input: ${error.message}`);
+      console.error('PostToolUse Hook Error:', error);
       await exitWithTime(1, 'error');
     }
   });

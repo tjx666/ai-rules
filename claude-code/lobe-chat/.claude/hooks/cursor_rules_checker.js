@@ -2,11 +2,13 @@
 
 /**
  * PreToolUse Hook: Cursor Rules Checker (JavaScript Version)
- * 
+ *
  * This hook simulates Cursor's project rules glob auto-loading mechanism:
  * - Checks if Read/Edit/MultiEdit tools access files matching rule glob patterns
+ * - Skips rules with "alwaysApply: true" (those are always applied by Claude Code)
+ * - Only processes rules with defined "globs" patterns
  * - If a matching rule hasn't been read yet, blocks execution and prompts to read the rule
- * 
+ *
  * Environment Variables:
  * - DEBUG_CURSOR_RULES=true: Enable debug logging to .claude/logs/
  */
@@ -25,7 +27,8 @@ const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const RULES_DIR = path.join(PROJECT_DIR, '.cursor', 'rules');
 const LOG_DIR = path.join(PROJECT_DIR, '.claude', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'cursor_rules_checker.log');
-const DEBUG = process.env.DEBUG_CURSOR_RULES === 'true';
+// const DEBUG = process.env.DEBUG_CURSOR_RULES === 'true';
+const DEBUG = true;
 
 // Helper function for debug logging
 async function log(message) {
@@ -50,62 +53,86 @@ async function exitWithTime(exitCode, status) {
 // Extract file paths from tool input
 function extractReadPaths(toolInput) {
   const paths = [];
-  
+
   if (toolInput.file_path) {
     paths.push(toolInput.file_path);
   }
-  
+
   if (toolInput.edits && Array.isArray(toolInput.edits)) {
     // MultiEdit case - file_path is at root level, not in individual edits
     // but just in case, check edits array too
-    toolInput.edits.forEach(edit => {
+    toolInput.edits.forEach((edit) => {
       if (edit.file_path) {
         paths.push(edit.file_path);
       }
     });
   }
-  
+
   return [...new Set(paths)]; // Remove duplicates
 }
 
-// Extract glob patterns from rule file frontmatter
-async function extractGlobsFromRule(rulePath) {
+// Extract rule information from file frontmatter
+async function extractRuleInfo(rulePath) {
   try {
     const content = await fs.readFile(rulePath, 'utf8');
-    
+
     // Extract YAML frontmatter
     const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
     if (!frontmatterMatch) {
       await log(`No frontmatter found in ${rulePath}`);
-      return [];
+      return { globs: [], alwaysApply: false };
     }
-    
+
     const frontmatter = frontmatterMatch[1];
+
+    // Parse YAML manually by splitting into lines
+    const lines = frontmatter.split('\n').map(line => line.trim()).filter(line => line);
     
-    // Extract globs line
-    const globsMatch = frontmatter.match(/^globs:\s*(.+)$/m);
-    if (!globsMatch) {
-      await log(`No globs found in ${rulePath}`);
-      return [];
+    let alwaysApply = false;
+    let globsValue = '';
+
+    for (const line of lines) {
+      // Check for alwaysApply
+      if (line.startsWith('alwaysApply:')) {
+        const value = line.substring('alwaysApply:'.length).trim();
+        alwaysApply = value === 'true';
+      }
+      // Check for globs
+      else if (line.startsWith('globs:')) {
+        globsValue = line.substring('globs:'.length).trim();
+      }
     }
-    
-    const globsValue = globsMatch[1].trim();
-    
+
+    // If alwaysApply is true, skip this rule completely
+    if (alwaysApply) {
+      await log(`Rule ${rulePath} has alwaysApply: true, skipping`);
+      return { globs: [], alwaysApply: true };
+    }
+
+    // If globs value is empty, return empty array
+    if (!globsValue) {
+      await log(`Empty globs in ${rulePath}`);
+      return { globs: [], alwaysApply: false };
+    }
+
     // Split by comma and clean up
-    const globs = globsValue.split(',').map(glob => glob.trim()).filter(Boolean);
-    
+    const globs = globsValue
+      .split(',')
+      .map((glob) => glob.trim())
+      .filter(Boolean);
+
     await log(`Extracted globs from ${rulePath}: ${JSON.stringify(globs)}`);
-    return globs;
+    return { globs, alwaysApply: false };
   } catch (error) {
     await log(`Error reading rule file ${rulePath}: ${error.message}`);
-    return [];
+    return { globs: [], alwaysApply: false };
   }
 }
 
 // Get already read .mdc files from current session transcript
 async function getReadMdcFiles(transcriptPath) {
   const readMdcFiles = [];
-  
+
   try {
     if (!transcriptPath || !fsSync.existsSync(transcriptPath)) {
       await log(`Transcript file not found: ${transcriptPath}`);
@@ -113,7 +140,9 @@ async function getReadMdcFiles(transcriptPath) {
     }
 
     // Search for Read tool calls in the transcript
-    const { stdout } = await execAsync(`rg '"name":"Read"' "${transcriptPath}" 2>/dev/null || true`);
+    const { stdout } = await execAsync(
+      `rg '"name":"Read"' "${transcriptPath}" 2>/dev/null || true`,
+    );
     if (!stdout.trim()) {
       return readMdcFiles;
     }
@@ -150,12 +179,18 @@ async function getReadMdcFiles(transcriptPath) {
 // Use bash shell for glob matching (more reliable than custom implementation)
 async function matchesGlob(filePath, globPattern) {
   try {
+    // Convert absolute path to relative path for glob matching
+    let relativePath = filePath;
+    if (filePath.startsWith(PROJECT_DIR)) {
+      relativePath = path.relative(PROJECT_DIR, filePath);
+    }
+
     // Use bash case statement for glob matching
-    const script = `case "${filePath}" in ${globPattern}) echo "match" ;; *) echo "no match" ;; esac`;
+    const script = `case "${relativePath}" in ${globPattern}) echo "match" ;; *) echo "no match" ;; esac`;
     const { stdout } = await execAsync(`bash -c '${script}'`);
     const result = stdout.trim() === 'match';
-    
-    await log(`Glob match test: "${filePath}" against "${globPattern}" -> ${result}`);
+
+    await log(`Glob match test: "${relativePath}" (from ${filePath}) against "${globPattern}" -> ${result}`);
     return result;
   } catch (error) {
     await log(`Error in glob matching: ${error.message}`);
@@ -166,7 +201,7 @@ async function matchesGlob(filePath, globPattern) {
 async function main() {
   // Read JSON input from stdin
   let inputData = '';
-  
+
   if (process.stdin.isTTY) {
     await log('No stdin data available');
     await exitWithTime(0, 'no-stdin');
@@ -174,7 +209,7 @@ async function main() {
   }
 
   process.stdin.setEncoding('utf8');
-  
+
   process.stdin.on('data', (chunk) => {
     inputData += chunk;
   });
@@ -188,28 +223,28 @@ async function main() {
       }
 
       await log(`Hook triggered with input: ${inputData.substring(0, 200)}...`);
-      
+
       const toolData = JSON.parse(inputData.trim());
       const toolInput = toolData.tool_input || {};
       const transcriptPath = toolData.transcript_path;
-      
+
       // Extract file paths from tool input
       const filePaths = extractReadPaths(toolInput);
       await log(`File paths: ${JSON.stringify(filePaths)}`);
-      
+
       if (filePaths.length === 0) {
         await log('No file paths found in tool input');
         await exitWithTime(0, 'no-paths');
         return;
       }
-      
+
       // Check if rules directory exists
       if (!fsSync.existsSync(RULES_DIR)) {
         await log(`Rules directory does not exist: ${RULES_DIR}`);
         await exitWithTime(0, 'no-rules-dir');
         return;
       }
-      
+
       // Get all rule files
       let ruleFiles;
       try {
@@ -221,38 +256,49 @@ async function main() {
         await exitWithTime(0, 'find-error');
         return;
       }
-      
+
       if (ruleFiles.length === 0) {
         await log('No rule files found');
         await exitWithTime(0, 'no-rules');
         return;
       }
-      
+
       // Get already read .mdc files from current session transcript
       const readMdcFiles = await getReadMdcFiles(transcriptPath);
-      
+
       // Check each file path against rule globs and collect all unread rules
       const unreadRules = [];
-      
+
       for (const filePath of filePaths) {
         await log(`Checking file: ${filePath}`);
-        
+
         for (const ruleFile of ruleFiles) {
-          const globs = await extractGlobsFromRule(ruleFile);
-          
-          for (const globPattern of globs) {
-            if (await matchesGlob(filePath, globPattern)) {
+          const ruleInfo = await extractRuleInfo(ruleFile);
+
+          // Skip if rule has no globs
+          if (ruleInfo.globs.length === 0) {
+            continue;
+          }
+
+          for (const globPattern of ruleInfo.globs) {
+            const matches = await matchesGlob(filePath, globPattern);
+
+            if (matches) {
               await log(`File ${filePath} matches glob ${globPattern} in rule ${ruleFile}`);
-              
+
               // Check if this rule file has been read in current session
               const hasBeenRead = readMdcFiles.includes(ruleFile);
-              
+
               if (!hasBeenRead) {
                 await log(`Rule file ${ruleFile} has not been read yet.`);
-                
+
                 // Add to unread rules if not already added
-                if (!unreadRules.some(rule => rule.ruleFile === ruleFile)) {
-                  unreadRules.push({ filePath, ruleFile, globPattern });
+                if (!unreadRules.some((rule) => rule.ruleFile === ruleFile)) {
+                  unreadRules.push({
+                    filePath,
+                    ruleFile,
+                    globPattern,
+                  });
                 }
               } else {
                 await log(`Rule file ${ruleFile} has been read, allowing access`);
@@ -261,38 +307,36 @@ async function main() {
           }
         }
       }
-      
+
       // If there are unread rules, block execution with all of them
       if (unreadRules.length > 0) {
         await log(`Found ${unreadRules.length} unread rule(s). Blocking execution.`);
-        
-        // Build comprehensive system reminder
-        const rulesList = unreadRules.map(rule => 
-          `- 文件 ${rule.filePath} 匹配规则 ${rule.ruleFile} 的模式 "${rule.globPattern}"`
-        ).join('\n');
-        
-        const readCommands = [...new Set(unreadRules.map(rule => rule.ruleFile))]
-          .map(ruleFile => `Read("${ruleFile}")`)
-          .join('\n');
-        
-        const reminder = `<system-reminder>
-检测到以下文件匹配未读取的规则：
-${rulesList}
 
+        // Get unique unread rule files and convert to relative paths
+        const uniqueRuleFiles = [...new Set(unreadRules.map((rule) => rule.ruleFile))];
+        const relativeRuleFiles = uniqueRuleFiles.map(ruleFile => 
+          ruleFile.startsWith(PROJECT_DIR) ? path.relative(PROJECT_DIR, ruleFile) : ruleFile
+        );
+
+        const readCommands = relativeRuleFiles
+          .map((ruleFile) => `Read("${ruleFile}")`)
+          .join('\n');
+
+        const reminder = `<system-reminder>
 请先读取相关规则文件以了解约定：
 ${readCommands}
 </system-reminder>`;
-        
+
         process.stderr.write(reminder);
         await exitWithTime(2, 'blocked');
         return;
       }
-      
+
       await log('All file accesses are allowed');
       await exitWithTime(0, 'success');
-      
     } catch (error) {
       await log(`Error processing input: ${error.message}`);
+      console.error('PreToolUse Hook Error:', error);
       await exitWithTime(1, 'error');
     }
   });
