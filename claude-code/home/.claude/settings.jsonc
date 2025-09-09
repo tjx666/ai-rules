@@ -22,18 +22,18 @@
                     }
                 ]
             }
-        ],
-        "PreToolUse": [
-            {
-                "matcher": "Bash",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "jq -r '\"\\(.tool_input.command) - \\(.tool_input.description // \"No description\")\"' >> ~/.claude/bash-command-log.txt"
-                    }
-                ]
-            }
         ]
+        // "PreToolUse": [
+        //     {
+        //         "matcher": "Bash",
+        //         "hooks": [
+        //             {
+        //                 "type": "command",
+        //                 "command": "jq -r '\"\\(.tool_input.command) - \\(.tool_input.description // \"No description\")\"' >> ~/.claude/bash-command-log.txt"
+        //             }
+        //         ]
+        //     }
+        // ]
     },
     "feedbackSurveyState": {
         "lastShownTime": 1754054175696
