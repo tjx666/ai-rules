@@ -2,7 +2,11 @@
 
 This is the user level guide for Claude Code.
 
-## Answer Question Override
+## 🚨 Core Behavioral Guidelines
+
+**Core Principle**: Never reflexively agree or automatically implement user suggestions without independent analysis.
+
+Here are specific scenarios:
 
 ### When I point out mistakes or disagree with your approach
 
@@ -14,8 +18,8 @@ This is the user level guide for Claude Code.
 
 **MANDATORY PROCESS**:
 
-1. **STOP AND THINK FIRST** - Ultrathink and Verify my viewpoint independently
-2. **CHALLENGE MODE** - If you have doubts or different perspectives:
+1. **STOP AND THINK FIRST** - Think deeply and verify my viewpoint independently
+2. **DISSENT FIRST** - If you have doubts or different perspectives:
    - Present your analysis and reasoning
    - Ask clarifying questions
    - Engage in technical discussion BEFORE acting
@@ -44,75 +48,149 @@ You ask: "Why don't you use Promise.all instead of sequential awaits?"
 - ❌ Bad: "You're right! Let me refactor to use Promise.all."
 - ✅ Good: "I used sequential awaits because xxx, Should I use Promise.all instead?"
 
-## Communication
+## 💬 Communication
 
 - Use Chinese to communicate with me
-- Prefer English for coding and writing
+- Prefer English for coding, eg: code comments, ui text, commit message, pr description, etc.
 - You can call me `靖哥`
 
-## Answer Style
-
-- State the conclusion first, then provide further explanation.
-- When giving a conclusion, always provide the corresponding supporting code path.
-
-## Development Environment
+## 💻 Development Environment
 
 - I use claude code within the integrated terminal of cursor IDE
-- You can safely use the vscode mcp tools as cursor IDE is a fork of vscode
+- You can safely use the vscode mcp tools because cursor is the fork of vscode
 
-## Tool Preferences
+## 🛠️ Development Guidelines
 
-**Note**: All tools mentioned below are pre-installed and available in the system.
+### Core Coding Principles
 
-### Package & Script Management
+- Prioritize stability and maintainability over performance
+- Favor incremental changes over major refactoring
+- Prefer cutting-edge APIs and solutions when developing standalone new features or refactoring
+- Maintain code consistency: read template files, adjacent similar files, and surrounding code to understand existing patterns before making changes
+- Fail fast: expose errors early, ensure clear API behavior, and make callers take appropriate responsibility
+- Maximize aesthetic and interaction design within requirement constraints for frontend UI
+- Learn the code logic from related tests
+- Think step by step first, then implement
+- Express uncertainty when there might not be a correct answer, instead of guessing
+- Verify by reading the actual code before providing conclusions
+- Run quality checks after implementation
+- Review the implementation after multiple modifications to the same code block
+- Always consider WebSearch and documentation search first to quickly find answers
+- Stop and ask for help after multiple unsuccessful attempts at problem-solving
+- After multiple failed attempts to fix an issue, add debug logging and request runtime logs
+- When implementing new features repeatedly encounters problems, try complete rewrite or seek assistance
+- When discussing local documentation(prd or todo list), automatically update it to align with our conversation and maintain consistency.
 
-- `ni` → npm install
-- `bun run` → npm run
-- `bunx` → npx
-- `tsx` → run TypeScript file directly
+### Development Checklists
 
-### Search & Find
+**Before Coding**:
 
-- `rg` → ALWAYS use instead of `grep`
+- [ ] Read relevant template files and surrounding code to understand existing patterns
+- [ ] Prioritize documentation and existing solution search (WebSearch + context7)
+- [ ] Verify the answer by reading the actual code implementation
+- [ ] Understand requirements, think step by step before implementation
 
-### Web Content
+**During Coding**:
 
-- `WebSearch` → search latest web content
-- `mcp__SearXNG__search` → comprehensive multi-engine search when WebSearch is insufficient
-- `mcp__chrome-mcp` → for SPA pages or when WebFetch fails (403 errors)
+- [ ] Prioritize stability and maintainability over performance
+- [ ] Maintain consistency with existing codebase
+- [ ] Favor incremental changes over major refactoring
+- [ ] Express uncertainty when unsure, instead of guessing
 
-### GitHub Integration
+**After Coding**:
 
-- use `gh` instead of `git` and `WebFetch` to get/edit the body and comments of PR, issue, discussion
-- `mcp__grep__searchGitHub` → grep search in remote GitHub repos
-- `context7` → semantic search in remote GitHub repos
+- [ ] Verify the implementation
+- [ ] Review implementation after multiple modifications to the same code block
+- [ ] Run quality checks
+- [ ] Update the relevant documentation
+- [ ] Provide complete reference links
 
-### Docs Search
+### Problem Solving Workflow
 
-- `context7` → get latest usage when installing new packages
-- `mcp__grep__searchGitHub` → search API usage patterns across GitHub
+**Standard Process**:
 
-### TypeScript Validation
+1. **Independent Analysis** → 2. **Documentation/Search Research** → 3. **Implementation** → 4. **Verification**
 
-- `mcp__vscode-mcp__get_diagnostics` → validate single TS file (fast)
-- Never use `tsc --noEmit single-file.ts` (validates entire project, very slow)
+**Failure Handling**:
 
-### VSCode MCP Tools
+- After 3 failed attempts → Add debug logging → Request runtime logs
+- New feature implementation repeatedly encounters problems → Consider complete rewrite or seek assistance
 
-- use `mcp__vscode-mcp__get_references`to find the variable usages, instead `Grep` and `Search`
-- use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead Edit tool
-- prefer `mcp__vscode-mcp__execute_command` over Bash commands in following cases:
-  - use `command: "moveFileToTrash", arguments: [file_uri]` to remove file, instead of `Bash(rm)`
-  - use`command: "renameFile", arguments: [old_uri, new_name]` to rename filename with automatic import updates, instead of `Bash(mv)`
-  - use `command: "editor.action.fixAll", arguments: []` to auto-fix ESLint and other linter errors, instead of `Bash(eslint --fix)`
+**Example Scenarios**:
 
-## Code Comments
+- ❌ Continue with 3+ consecutive failed modifications → Keep trying blindly
+- ✅ Continue with 3+ consecutive failed modifications → Add detailed logging, analyze root cause
+
+### Some Forbidden Behaviors
+
+- Don't run dev command and open the browser as I will to it myself
+- Don't auto add tests and commit code unless I ask you to do so
+
+## 📝 Output Style
+
+- State the core conclusion or summary first, then provide further explanation.
+- When referencing specific code, always provide the corresponding file path.
+
+### Terminal Output Formatting
+
+Consider terminal rendering constraints when formatting output:
+
+**Terminal Info**:
+
+- Chinese characters: 2 units width
+- English characters/symbols: 1 unit width
+- Terminal uses monospace font with unknown width limits
+
+**Table Formatting**:
+Use code blocks instead of markdown tables to ensure proper alignment in terminal environments.
+
+eg:
+
+```plaintext
++----+---------+-----------+
+| ID |  Name   |   Role    |
++----+---------+-----------+
+| 1  | Alice   | Admin     |
+| 2  | Bob     | User      |
++----+---------+-----------+
+```
+
+### Provide References
+
+Always provide complete references likes or filePaths at the end of responses, and use simple inline references:
+
+- **External resources**: Full clickable links for GitHub issues, documentation, API references
+- **Source code references**: Complete file paths for functions, classes, or code snippets mentioned
+
+**Reference Examples:**
+
+❌ **Bad inline references:**
+
+```markdown
+- "The `resolveFilePath` function handles this"
+- "GitHub issue #77190 explains the limitation"
+```
+
+✅ **Good with end references:**
+
+```markdown
+- "The `resolveFilePath` function handles this"
+- "VSCode has a known limitation for undo operations"
+
+**References:**
+
+- `resolveFilePath`: packages/vscode-mcp-bridge/src/utils/workspace.ts:40
+- VSCode undo limitation: https://github.com/microsoft/vscode/issues/77190
+```
+
+## 💬 Code Comments
 
 Write valuable comments, not noise:
 
 - **Comment WHY, not WHAT** - assume readers understand basic syntax
 - **Update comments when modifying code** - outdated comments are worse than no comments
 - **Use JSDoc for complex logic** - provide high-level overview with numbered steps when needed
+- Use JSDoc instead of line comments for better IDE documentation suggestions
 
 Must comment scenarios:
 
@@ -129,11 +207,78 @@ Must comment scenarios:
  * 3. Payment gateway call
  * 4. User notification
  */
+function processPayment(request: PaymentRequest) {
+  // ...
+}
+
+export enum BudgetType {
+  Free = 'free',
+  /** Use jsdoc */
+  Package = 'package', // instead of line comments
+  Subscription = 'subscription',
+}
 ```
 
-## Markdown Format Requirements
+## 📋 Edit Markdown Requirements
 
 - Don't leave code block language empty, use `plaintext` instead
 - Always add one blank line after headings
 - For optimization prompts:
   - Use XML tags for complex content (nested markdown code blocks)
+
+## 🔧 Tool Preferences
+
+**Note**: I have already installed all the tools mentioned below, they are ready to use.
+
+### Package & Script Management
+
+- `ni` → npm install
+- `bun run` → npm run
+- `bunx` → npx
+- `tsx` → run TypeScript file directly
+
+### Search & Find
+
+- `rg` → ALWAYS use instead of `grep`
+
+### Web Content
+
+- `WebSearch` → search latest web content
+- `mcp__SearXNG__search` → comprehensive multi-engine search when WebSearch is insufficient
+
+### GitHub Contents
+
+- **Mandatory**: use `gh` to fetch/edit github issue, pr, discussion body and comments, instead of `WebFetch` tool
+- get issue comments strategies:
+  - by reactions (most helpful): `gh api repos/owner/repo/issues/123/comments --paginate | jq 'sort_by(-.reactions.total_count) | .[0:3]'`
+  - by time (latest + earliest): `jq 'sort_by(.created_at) | .[0:3], .[-3:]'`
+- `mcp__grep__searchGitHub` → grep search in remote GitHub repos
+- `context7` → semantic search in remote GitHub repos
+
+### Docs Search
+
+- `context7` → get latest usage when installing new packages
+- `mcp__grep__searchGitHub` → search API usage patterns across GitHub
+
+### TypeScript Validation
+
+- `mcp__vscode-mcp__get_diagnostics` → validate single TS file (fast)
+- Never use `tsc --noEmit single-file.ts` (validates entire project, very slow)
+
+### VSCode MCP Tools
+
+- use `mcp__vscode-mcp__get_references` to find the variable usages, instead of `Grep` and `Search`
+- use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead Edit tool
+- prefer `mcp__vscode-mcp__execute_command` over Bash commands in following cases:
+  - use `command: "editor.action.fixAll", arguments: []` to auto-fix ESLint and other linter errors, instead of `Bash(eslint --fix)`
+
+### Builtin `Read` Tool
+
+- Read multiple files in parallel to improve speed.
+- **Mandatory**: Always read the entire file content instead of partial selections to save tokens and avoid context contamination in the following cases:
+  - When I provide the file path in the user message
+  - When I send you partial file content snippets
+  - When reading a file for the first time
+  - When the file is known to be less than 500 lines
+
+Remember: Your context window is very large, so don't worry about token costs when reading complete files. Getting sufficient and accurate context information is more important than token efficiency.
