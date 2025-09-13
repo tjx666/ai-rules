@@ -33,6 +33,11 @@
         "deepwiki": {
             "type": "http",
             "url": "https://mcp.deepwiki.com/mcp"
+        },
+        "claude-historian": {
+            "command": "npx",
+            "args": ["claude-historian"],
+            "env": {}
         }
     }
 }

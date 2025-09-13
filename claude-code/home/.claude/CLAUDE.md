@@ -2,7 +2,7 @@
 
 This is the user level guide for Claude Code.
 
-## 🚨 Core Behavioral Guidelines
+## 🚨 Common Mistakes When Answering Questions
 
 **Core Principle**: Never reflexively agree or automatically implement user suggestions without independent analysis.
 
@@ -63,49 +63,39 @@ You ask: "Why don't you use Promise.all instead of sequential awaits?"
 
 ### Core Coding Principles
 
-- Prioritize stability and maintainability over performance
-- Favor incremental changes over major refactoring
-- Prefer cutting-edge APIs and solutions when developing standalone new features or refactoring
-- Maintain code consistency: read template files, adjacent similar files, and surrounding code to understand existing patterns before making changes
-- Fail fast: expose errors early, ensure clear API behavior, and make callers take appropriate responsibility
-- Maximize aesthetic and interaction design within requirement constraints for frontend UI
-- Learn the code logic from related tests
-- Think step by step first, then implement
-- Express uncertainty when there might not be a correct answer, instead of guessing
-- Verify by reading the actual code before providing conclusions
-- Run quality checks after implementation
-- Review the implementation after multiple modifications to the same code block
-- Always consider WebSearch and documentation search first to quickly find answers
-- Stop and ask for help after multiple unsuccessful attempts at problem-solving
-- After multiple failed attempts to fix an issue, add debug logging and request runtime logs
-- When implementing new features repeatedly encounters problems, try complete rewrite or seek assistance
-- When discussing local documentation(prd or todo list), automatically update it to align with our conversation and maintain consistency.
+- Prioritize stability and maintainability over performance; only optimize performance when it directly impacts user experience, SLOs, or cost budgets
+- Favor incremental changes over large refactors; when major refactoring is necessary, ensure a documented migration plan and clear rollback strategy
+- Reserve cutting-edge APIs for isolated, standalone new features with feature flags and fallbacks; for refactoring existing code, stick to proven and well-supported APIs
+- When facing uncertainty, explicitly output your assumptions, trade-offs, and validation plan rather than making assumptions
 
-### Development Checklists
+### Development Lifecycle Guide
 
-**Before Coding**:
+_For complete feature development and requirement implementation:_
+
+**Planning**:
 
 - [ ] Read relevant template files and surrounding code to understand existing patterns
 - [ ] Prioritize documentation and existing solution search (WebSearch + context7)
 - [ ] Verify the answer by reading the actual code implementation
-- [ ] Understand requirements, think step by step before implementation
+- [ ] Understand requirements, think step by step and create todo list before implementation
 
-**During Coding**:
+**Implementation**:
 
-- [ ] Prioritize stability and maintainability over performance
-- [ ] Maintain consistency with existing codebase
-- [ ] Favor incremental changes over major refactoring
-- [ ] Express uncertainty when unsure, instead of guessing
+- [ ] Maintain code consistency: read template files, adjacent similar files, and surrounding code to understand existing patterns before making changes
+- [ ] Fail fast: expose errors early, ensure clear API behavior, and make callers take appropriate responsibility
+- [ ] Maximize aesthetic and interaction design within requirement constraints for frontend UI
 
-**After Coding**:
+**Acceptance**:
 
-- [ ] Verify the implementation
+- [ ] Verify the implementation by tests or temp nodejs test scripts
 - [ ] Review implementation after multiple modifications to the same code block
 - [ ] Run quality checks
-- [ ] Update the relevant documentation
+- [ ] Update the relevant documentation if exists
 - [ ] Provide complete reference links
 
-### Problem Solving Workflow
+### Problem Solving Methodology
+
+_When encountering specific technical issues, bugs, or implementation blockers:_
 
 **Standard Process**:
 
@@ -137,22 +127,26 @@ Consider terminal rendering constraints when formatting output:
 
 **Terminal Info**:
 
-- Chinese characters: 2 units width
+- Chinese characters/symbols: 2 units width
 - English characters/symbols: 1 unit width
 - Terminal uses monospace font with unknown width limits
 
 **Table Formatting**:
-Use code blocks instead of markdown tables to ensure proper alignment in terminal environments.
+
+**Mandatory**: Use code blocks instead of markdown tables to ensure proper alignment in terminal environments.
+
+- Use left alignment for all columns
+- Add two spaces padding on both sides of each cell content
 
 eg:
 
 ```plaintext
-+----+---------+-----------+
-| ID |  Name   |   Role    |
-+----+---------+-----------+
-| 1  | Alice   | Admin     |
-| 2  | Bob     | User      |
-+----+---------+-----------+
++------+---------+---------+
+|  ID  |  Name   |  Role   |
++------+---------+---------+
+|  1   |  Alice  |  Admin  |
+|  2   |  Bob    |  User   |
++------+---------+---------+
 ```
 
 ### Provide References
@@ -183,7 +177,7 @@ Always provide complete references likes or filePaths at the end of responses, a
 - VSCode undo limitation: https://github.com/microsoft/vscode/issues/77190
 ```
 
-## 💬 Code Comments
+## 💭 Code Comments
 
 Write valuable comments, not noise:
 
@@ -237,23 +231,26 @@ export enum BudgetType {
 - `bunx` → npx
 - `tsx` → run TypeScript file directly
 
-### Search & Find
+### Bash Tools
 
 - `rg` → ALWAYS use instead of `grep`
+- Use `jq` to query large json and jsonl files
 
-### Web Content
+### Web Search
 
 - `WebSearch` → search latest web content
 - `mcp__SearXNG__search` → comprehensive multi-engine search when WebSearch is insufficient
 
+**Note**: Include "2025" in search keywords for latest information
+
 ### GitHub Contents
 
-- **Mandatory**: use `gh` to fetch/edit github issue, pr, discussion body and comments, instead of `WebFetch` tool
-- get issue comments strategies:
-  - by reactions (most helpful): `gh api repos/owner/repo/issues/123/comments --paginate | jq 'sort_by(-.reactions.total_count) | .[0:3]'`
-  - by time (latest + earliest): `jq 'sort_by(.created_at) | .[0:3], .[-3:]'`
-- `mcp__grep__searchGitHub` → grep search in remote GitHub repos
-- `context7` → semantic search in remote GitHub repos
+**Mandatory**: use `gh` to fetch/edit github issue, pr, discussion body and comments, instead of `WebFetch` tool
+
+get issue comments strategies:
+
+- by reactions (most helpful): `gh api repos/owner/repo/issues/123/comments --paginate | jq 'sort_by(-.reactions.total_count) | .[0:3]'`
+- by time (latest + earliest): `jq 'sort_by(.created_at) | .[0:3], .[-3:]'`
 
 ### Docs Search
 
@@ -263,22 +260,21 @@ export enum BudgetType {
 ### TypeScript Validation
 
 - `mcp__vscode-mcp__get_diagnostics` → validate single TS file (fast)
-- Never use `tsc --noEmit single-file.ts` (validates entire project, very slow)
+- Never use `tsc --noEmit single-file.ts`, it will validate entire project, very slow
 
 ### VSCode MCP Tools
 
-- use `mcp__vscode-mcp__get_references` to find the variable usages, instead of `Grep` and `Search`
-- use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead Edit tool
-- prefer `mcp__vscode-mcp__execute_command` over Bash commands in following cases:
-  - use `command: "editor.action.fixAll", arguments: []` to auto-fix ESLint and other linter errors, instead of `Bash(eslint --fix)`
+- use `mcp__vscode-mcp__get_references` to find the symbol usages and determine the scope of refactoring, instead of `Grep` and `Search`
+- use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead `Edit` tool
+- prefer `mcp__vscode-mcp__execute_command` run `editor.action.fixAll` command over `Bash(eslint --fix)` to auto-fix ESLint and other linter errors
 
 ### Builtin `Read` Tool
 
-- Read multiple files in parallel to improve speed.
-- **Mandatory**: Always read the entire file content instead of partial selections to save tokens and avoid context contamination in the following cases:
-  - When I provide the file path in the user message
-  - When I send you partial file content snippets
-  - When reading a file for the first time
-  - When the file is known to be less than 500 lines
+**Mandatory**: Always read the entire file content instead of partial selections to save tokens and avoid context contamination in the following cases:
+
+- When I provide the file path in the user message
+- When I send you partial file content snippets
+- When reading a file for the first time
+- When the file is known to be less than 500 lines
 
 Remember: Your context window is very large, so don't worry about token costs when reading complete files. Getting sufficient and accurate context information is more important than token efficiency.

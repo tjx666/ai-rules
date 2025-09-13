@@ -1,0 +1,21 @@
+model = "gpt-5"
+model_reasoning_effort = "high"
+# model_verbosity = "high"
+tools.web_search = true
+
+
+# MCP servers converted from ~/.claude.json mcpServers
+[mcp_servers.grep]
+command = "mcp-proxy"
+args = ["--transport=streamablehttp", "https://mcp.grep.app"]
+
+[mcp_servers.vscode-mcp]
+command = "npx"
+args = ["-y", "@vscode-mcp/vscode-mcp-server@latest"]
+env = {}
+startup_timeout_ms = 20_000
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+startup_timeout_ms = 20_000

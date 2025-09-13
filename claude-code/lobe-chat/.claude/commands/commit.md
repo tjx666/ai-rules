@@ -2,6 +2,7 @@
 allowed-tools: Bash(git:*), Bash(awk:*), Bash(wc:*), Bash(grep:*), Bash(print:*)
 argument-hint: [all|staged|<files>]
 description: Create a git commit with smart file selection
+model: claude-sonnet-4-0
 ---
 
 <ultrathink />

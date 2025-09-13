@@ -14,6 +14,9 @@
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
+const { promisify } = require('util');
+const { exec } = require('child_process');
+const execAsync = promisify(exec);
 
 const startTime = process.hrtime.bigint();
 
@@ -21,8 +24,7 @@ const startTime = process.hrtime.bigint();
 const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const LOG_DIR = path.join(PROJECT_DIR, '.claude', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'read_completeness.log');
-// const DEBUG = process.env.HOOK_DEBUG === '1';
-const DEBUG = true;
+const DEBUG = !!process.env.CC_HOOK_DEBUG;
 
 // Helper function for debug logging
 async function logDebug(message) {
@@ -51,6 +53,51 @@ async function exitWithTime(exitCode, status) {
   const executionTime = Number(endTime - startTime) / 1_000_000;
   await logDebug(`Hook execution time: ${executionTime.toFixed(2)}ms (${status})`);
   process.exit(exitCode);
+}
+
+// Get already read files from current session transcript
+async function getReadFiles(transcriptPath) {
+  const readFiles = [];
+
+  try {
+    if (!transcriptPath || !fsSync.existsSync(transcriptPath)) {
+      await logDebug(`Transcript file not found: ${transcriptPath}`);
+      return readFiles;
+    }
+
+    // Search for Read tool calls in the transcript
+    const { stdout } = await execAsync(
+      `rg '"name":"Read"' "${transcriptPath}" 2>/dev/null || true`,
+    );
+    if (!stdout.trim()) {
+      return readFiles;
+    }
+
+    // Parse each line to extract file paths from Read tool calls
+    const lines = stdout.trim().split('\n');
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line);
+        const content = entry.message?.content || [];
+        for (const item of content) {
+          if (item.type === 'tool_use' && item.name === 'Read' && item.input?.file_path) {
+            const filePath = item.input.file_path;
+            readFiles.push(filePath);
+          }
+        }
+      } catch (parseError) {
+        // Skip invalid JSON lines
+        await logDebug(`Failed to parse transcript line: ${parseError.message}`);
+      }
+    }
+
+    const uniqueReadFiles = [...new Set(readFiles)];
+    await logDebug(`Already read files in session: ${JSON.stringify(uniqueReadFiles)}`);
+    return uniqueReadFiles;
+  } catch (error) {
+    await logDebug(`Error checking transcript for read files: ${error.message}`);
+    return readFiles;
+  }
 }
 
 async function main() {
@@ -86,6 +133,7 @@ async function main() {
       const filePath = toolInput.file_path || '';
       const offset = toolInput.offset;
       const limit = toolInput.limit;
+      const transcriptPath = toolData.transcript_path;
 
       // Extract tool response metadata
       const toolResponse = toolData.tool_response || {};
@@ -115,10 +163,17 @@ async function main() {
       // Check reading rules
       const hasOffset = offset !== undefined && offset !== null && offset !== '';
       const hasLimit = limit !== undefined && limit !== null && limit !== '';
-      const isPartialRead = hasOffset || hasLimit;
+      const hasParameters = hasOffset || hasLimit;
+
+      // Check if it's actually a partial read (not reading the complete file)
+      const isCompleteRead = (startLine === 1) && (readLines === totalLines);
+      const isPartialRead = hasParameters && !isCompleteRead;
 
       await logDebug(
-        `Has offset: ${hasOffset}, Has limit: ${hasLimit}, Is partial: ${isPartialRead}`,
+        `Has offset: ${hasOffset}, Has limit: ${hasLimit}, Has parameters: ${hasParameters}`,
+      );
+      await logDebug(
+        `Complete read: ${isCompleteRead}, Is partial: ${isPartialRead}`,
       );
 
       // Rule 1: Files < 500 lines must be read completely
@@ -130,8 +185,13 @@ async function main() {
       }
 
       // Rule 2: Files < 1000 lines should be read completely on first read
-      // (Only check if there's a limit but no offset, indicating first read with limit)
-      if (totalLines < 1000 && !hasOffset && hasLimit) {
+      // Check if this file has been read before in current session
+      const readFiles = await getReadFiles(transcriptPath);
+      const hasBeenRead = readFiles.includes(filePath);
+      await logDebug(`File ${filePath} has been read before: ${hasBeenRead}`);
+
+      // Only apply rule if this is the first read AND it's a partial read
+      if (totalLines < 1000 && !hasBeenRead && isPartialRead) {
         await logDebug('Rule violation: File < 1000 lines with first partial read');
         sendReminderMessage('小于 1000 行，首次读取应当完整', filePath, totalLines);
         await exitWithTime(2, 'blocked-rule2');

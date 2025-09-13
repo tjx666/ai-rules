@@ -27,8 +27,7 @@ const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const RULES_DIR = path.join(PROJECT_DIR, '.cursor', 'rules');
 const LOG_DIR = path.join(PROJECT_DIR, '.claude', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'cursor_rules_checker.log');
-// const DEBUG = process.env.DEBUG_CURSOR_RULES === 'true';
-const DEBUG = true;
+const DEBUG = !!process.env.CC_HOOK_DEBUG;
 
 // Helper function for debug logging
 async function log(message) {
@@ -86,8 +85,11 @@ async function extractRuleInfo(rulePath) {
     const frontmatter = frontmatterMatch[1];
 
     // Parse YAML manually by splitting into lines
-    const lines = frontmatter.split('\n').map(line => line.trim()).filter(line => line);
-    
+    const lines = frontmatter
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line);
+
     let alwaysApply = false;
     let globsValue = '';
 
@@ -190,7 +192,9 @@ async function matchesGlob(filePath, globPattern) {
     const { stdout } = await execAsync(`bash -c '${script}'`);
     const result = stdout.trim() === 'match';
 
-    await log(`Glob match test: "${relativePath}" (from ${filePath}) against "${globPattern}" -> ${result}`);
+    await log(
+      `Glob match test: "${relativePath}" (from ${filePath}) against "${globPattern}" -> ${result}`,
+    );
     return result;
   } catch (error) {
     await log(`Error in glob matching: ${error.message}`);
@@ -314,13 +318,11 @@ async function main() {
 
         // Get unique unread rule files and convert to relative paths
         const uniqueRuleFiles = [...new Set(unreadRules.map((rule) => rule.ruleFile))];
-        const relativeRuleFiles = uniqueRuleFiles.map(ruleFile => 
-          ruleFile.startsWith(PROJECT_DIR) ? path.relative(PROJECT_DIR, ruleFile) : ruleFile
+        const relativeRuleFiles = uniqueRuleFiles.map((ruleFile) =>
+          ruleFile.startsWith(PROJECT_DIR) ? path.relative(PROJECT_DIR, ruleFile) : ruleFile,
         );
 
-        const readCommands = relativeRuleFiles
-          .map((ruleFile) => `Read("${ruleFile}")`)
-          .join('\n');
+        const readCommands = relativeRuleFiles.map((ruleFile) => `Read("${ruleFile}")`).join('\n');
 
         const reminder = `<system-reminder>
 请先读取相关规则文件以了解约定：

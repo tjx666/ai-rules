@@ -2,6 +2,7 @@
 allowed-tools: Bash(git:*), Bash(awk:*), Bash(wc:*), Bash(grep:*), Bash(print:*)
 argument-hint: [new-branch-description]
 description: Create a new git branch with smart validation and naming
+model: claude-sonnet-4-0
 ---
 
 <ultrathink />

@@ -1,6 +1,7 @@
 ---
 allowed-tools: Bash(git:*), Bash(awk:*), Bash(wc:*), Bash(grep:*), Bash(print:*)
 description: Run quality check for current modified files
+model: claude-3-5-haiku-latest
 ---
 
 <ultrathink />

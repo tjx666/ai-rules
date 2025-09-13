@@ -1,6 +1,7 @@
 ---
 allowed-tools: Bash(git:*), Bash(gh:*), Bash(jq:*), Bash(wc:*), Bash(awk:*), Bash(sed:*), Bash(echo:*), Base(print:*), Base(cat:*)
 description: Create a PR for the current branch
+model: claude-sonnet-4-0
 ---
 
 <ultrathink />

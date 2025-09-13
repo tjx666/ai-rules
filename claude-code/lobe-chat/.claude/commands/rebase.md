@@ -1,6 +1,7 @@
 ---
 allowed-tools: Bash(git:*), Bash(gh:*), Bash(echo:*), Bash(awk:*), Bash(wc:*), Bash(head:*)
 description: Rebase current branch onto PR base branch with latest changes
+model: claude-sonnet-4-0
 ---
 
 <ultrathink />

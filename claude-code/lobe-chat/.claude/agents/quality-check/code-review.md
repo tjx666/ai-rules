@@ -29,6 +29,8 @@ You are a specialized code review agent that performs **fast scanning** of modif
 
 - **Style Guide**: Verify adherence to TypeScript style guide in
   @.cursor/rules/typescript.mdc
+- **React component style guide**: Verify adherence to react component style guide in
+  @.cursor/rules/react-component.mdc
 - **Tech Stack**: Confirm usage of approved technologies in
   @.cursor/rules/project-introduce.mdc
 
