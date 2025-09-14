@@ -63,9 +63,11 @@ You ask: "Why don't you use Promise.all instead of sequential awaits?"
 
 ### Core Coding Principles
 
-- Prioritize stability and maintainability over performance; only optimize performance when it directly impacts user experience, SLOs, or cost budgets
-- Favor incremental changes over large refactors; when major refactoring is necessary, ensure a documented migration plan and clear rollback strategy
-- Reserve cutting-edge APIs for isolated, standalone new features with feature flags and fallbacks; for refactoring existing code, stick to proven and well-supported APIs
+- Write clean, readable, reusable, efficient and testable code
+- Prioritize stability and maintainability over performance optimization
+- Prefer reusable and modular code over duplicating similar logic
+- Favor incremental changes over large refactors; when major refactoring is necessary, raise the issue and discuss with me first
+- Prefer compatible and reliable cutting-edge APIs for isolated, standalone new features
 - When facing uncertainty, explicitly output your assumptions, trade-offs, and validation plan rather than making assumptions
 
 ### Development Lifecycle Guide
@@ -77,7 +79,8 @@ _For complete feature development and requirement implementation:_
 - [ ] Read relevant template files and surrounding code to understand existing patterns
 - [ ] Prioritize documentation and existing solution search (WebSearch + context7)
 - [ ] Verify the answer by reading the actual code implementation
-- [ ] Understand requirements, think step by step and create todo list before implementation
+- [ ] Understand requirements, think step by step
+- [ ] create todo list
 
 **Implementation**:
 
@@ -111,10 +114,13 @@ _When encountering specific technical issues, bugs, or implementation blockers:_
 - ❌ Continue with 3+ consecutive failed modifications → Keep trying blindly
 - ✅ Continue with 3+ consecutive failed modifications → Add detailed logging, analyze root cause
 
-### Some Forbidden Behaviors
+### 🚨 Forbidden Behaviors
 
-- Don't run dev command and open the browser as I will to it myself
-- Don't auto add tests and commit code unless I ask you to do so
+**MANDATORY**: Wait for explicit request before:
+
+- Running `git commit`, `git push`
+- Starting dev server (`npm dev`, `next dev`, etc.)
+- Creating new test files
 
 ## 📝 Output Style
 
@@ -123,22 +129,22 @@ _When encountering specific technical issues, bugs, or implementation blockers:_
 
 ### Terminal Output Formatting
 
-Consider terminal rendering constraints when formatting output:
+Consider terminal rendering constraints when formatting markdown output:
 
-**Terminal Info**:
+#### Terminal Info
 
 - Chinese characters/symbols: 2 units width
 - English characters/symbols: 1 unit width
 - Terminal uses monospace font with unknown width limits
 
-**Table Formatting**:
+#### Table Formatting
 
-**Mandatory**: Use code blocks instead of markdown tables to ensure proper alignment in terminal environments.
+**Mandatory**: Use code blocks instead of markdown tables because Claude's code doesn't support markdown tables and mermaid rendering.
 
 - Use left alignment for all columns
 - Add two spaces padding on both sides of each cell content
 
-eg:
+✅ **Good Example:**
 
 ```plaintext
 +------+---------+---------+
@@ -147,6 +153,15 @@ eg:
 |  1   |  Alice  |  Admin  |
 |  2   |  Bob    |  User   |
 +------+---------+---------+
+```
+
+❌ **Bad Example (DO NOT USE):**
+
+```markdown
+| ID  | Name  | Role  |
+| --- | ----- | ----- |
+| 1   | Alice | Admin |
+| 2   | Bob   | User  |
 ```
 
 ### Provide References
@@ -185,6 +200,7 @@ Write valuable comments, not noise:
 - **Update comments when modifying code** - outdated comments are worse than no comments
 - **Use JSDoc for complex logic** - provide high-level overview with numbered steps when needed
 - Use JSDoc instead of line comments for better IDE documentation suggestions
+- Add space between Chinese and English content for better readability
 
 Must comment scenarios:
 
@@ -205,6 +221,8 @@ function processPayment(request: PaymentRequest) {
   // ...
 }
 
+// !: Add one space for better readability
+// Budget 枚举类型
 export enum BudgetType {
   Free = 'free',
   /** Use jsdoc */
@@ -251,6 +269,8 @@ get issue comments strategies:
 
 - by reactions (most helpful): `gh api repos/owner/repo/issues/123/comments --paginate | jq 'sort_by(-.reactions.total_count) | .[0:3]'`
 - by time (latest + earliest): `jq 'sort_by(.created_at) | .[0:3], .[-3:]'`
+
+**important**: When submit new issue/pr, be sure to read and follow the related template
 
 ### Docs Search
 
