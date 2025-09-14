@@ -11,20 +11,14 @@
  * - DEBUG_DANGEROUS_BASH=true: Enable debug logging to .claude/logs/
  */
 
-const fs = require('fs').promises;
-const fsSync = require('fs');
-const path = require('path');
-const { promisify } = require('util');
-const { exec } = require('child_process');
-const execAsync = promisify(exec);
-
-const startTime = process.hrtime.bigint();
+// Import utils
+const { exitWithTime, hookMain, extractToolInfo } = require('./utils/core');
+const { isPathInWorkspace } = require('./utils/filesystem');
+const { isFileTrackedByGit } = require('./utils/git');
+const { extractRmFilePaths, checkDangerousPatterns } = require('./utils/command');
 
 // Configuration
-const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-const LOG_DIR = path.join(PROJECT_DIR, '.claude', 'logs');
-const LOG_FILE = path.join(LOG_DIR, 'dangerous_bash_checker.log');
-const DEBUG = !!process.env.CC_HOOK_DEBUG;
+const LOG_FILE = 'dangerous_bash_checker.log';
 
 // Dangerous command patterns
 const DANGEROUS_PATTERNS = [
@@ -42,74 +36,9 @@ const DANGEROUS_PATTERNS = [
   },
 ];
 
-// Helper function for debug logging
-async function logDebug(message) {
-  if (DEBUG) {
-    if (!fsSync.existsSync(LOG_DIR)) {
-      await fs.mkdir(LOG_DIR, { recursive: true });
-    }
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const logMessage = `${timestamp} [DEBUG] ${message}\n`;
-    await fs.appendFile(LOG_FILE, logMessage);
-  }
-}
-
-// Helper function to exit with execution time logging
-async function exitWithTime(exitCode, status, jsonOutput = null) {
-  const endTime = process.hrtime.bigint();
-  const executionTime = Number(endTime - startTime) / 1_000_000;
-  await logDebug(`Hook execution time: ${executionTime.toFixed(2)}ms (${status})`);
-
-  if (jsonOutput) {
-    console.log(JSON.stringify(jsonOutput, null, 2));
-  }
-
-  process.exit(exitCode);
-}
-
-// Extract file paths from rm command
-function extractRmFilePaths(command) {
-  // Match rm command with various flags and extract file paths
-  const rmMatch = command.match(/\brm\s+(?:[-\w\s]*\s+)?(.+)/);
-  if (!rmMatch) return [];
-
-  // Split arguments and filter out flags
-  const args = rmMatch[1].trim().split(/\s+/);
-  return args.filter((arg) => !arg.startsWith('-'));
-}
-
-// Check if path is within workspace
-function isPathInWorkspace(filePath) {
-  try {
-    const absolutePath = path.resolve(filePath);
-    const relativePath = path.relative(PROJECT_DIR, absolutePath);
-    // If relative path starts with ../ it means it's outside workspace
-    return !relativePath.startsWith('../') && !path.isAbsolute(relativePath);
-  } catch (error) {
-    return false;
-  }
-}
-
-// Check if file is tracked by git
-async function isFileTrackedByGit(filePath) {
-  try {
-    const absolutePath = path.resolve(filePath);
-    const relativePath = path.relative(PROJECT_DIR, absolutePath);
-
-    // Use git ls-files to check if file is tracked
-    const { stdout } = await execAsync(
-      `cd "${PROJECT_DIR}" && git ls-files "${relativePath}" 2>/dev/null`,
-      { cwd: PROJECT_DIR },
-    );
-    return stdout.trim().length > 0;
-  } catch (error) {
-    await logDebug(`Error checking git status for ${filePath}: ${error.message}`);
-    return false;
-  }
-}
 
 // Check if command contains dangerous patterns
-async function checkDangerousCommand(command) {
+async function checkDangerousCommand(command, logger) {
   const dangerousCommands = [];
 
   for (const { pattern, command: cmdName, description, reason } of DANGEROUS_PATTERNS) {
@@ -117,14 +46,14 @@ async function checkDangerousCommand(command) {
       // Special handling for rm command
       if (cmdName === 'rm') {
         const filePaths = extractRmFilePaths(command);
-        await logDebug(`Extracted rm file paths: ${JSON.stringify(filePaths)}`);
+        await logger.debug(`Extracted rm file paths: ${JSON.stringify(filePaths)}`);
 
         let hasDangerousFiles = false;
         const dangerousFiles = [];
 
         for (const filePath of filePaths) {
           const inWorkspace = isPathInWorkspace(filePath);
-          await logDebug(`File ${filePath} in workspace: ${inWorkspace}`);
+          await logger.debug(`File ${filePath} in workspace: ${inWorkspace}`);
 
           if (!inWorkspace) {
             // File outside workspace is always dangerous
@@ -132,8 +61,8 @@ async function checkDangerousCommand(command) {
             hasDangerousFiles = true;
           } else {
             // File in workspace, check git status
-            const isTracked = await isFileTrackedByGit(filePath);
-            await logDebug(`File ${filePath} tracked by git: ${isTracked}`);
+            const isTracked = await isFileTrackedByGit(filePath, LOG_FILE);
+            await logger.debug(`File ${filePath} tracked by git: ${isTracked}`);
 
             if (!isTracked) {
               // File in workspace but not tracked by git is dangerous
@@ -174,106 +103,69 @@ async function checkDangerousCommand(command) {
   return dangerousCommands;
 }
 
-async function main() {
-  // Read JSON input from stdin
-  let inputData = '';
+// Main hook processing logic
+async function processHook(toolData, logger) {
+  const { toolName, toolInput } = extractToolInfo(toolData);
 
-  if (process.stdin.isTTY) {
-    await logDebug('No stdin data available');
-    await exitWithTime(0, 'no-stdin');
+  // Only check Bash tool calls
+  if (toolName !== 'Bash') {
+    await logger.debug(`Tool is not Bash (${toolName}), allowing`);
+    await exitWithTime(0, 'not-bash', logger, {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow',
+        permissionDecisionReason: `Tool is not Bash: ${toolName}`,
+      },
+    });
     return;
   }
 
-  process.stdin.setEncoding('utf8');
+  const command = toolInput.command || '';
+  await logger.debug(`Checking bash command: ${command}`);
 
-  process.stdin.on('data', (chunk) => {
-    inputData += chunk;
-  });
+  if (!command.trim()) {
+    await logger.debug('Empty command, allowing');
+    await exitWithTime(0, 'empty-command', logger, {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow',
+        permissionDecisionReason: 'Empty command',
+      },
+    });
+    return;
+  }
 
-  process.stdin.on('end', async () => {
-    try {
-      if (!inputData.trim()) {
-        await logDebug('Empty stdin');
-        await exitWithTime(0, 'empty-stdin');
-        return;
-      }
+  // Check for dangerous patterns
+  const dangerousCommands = await checkDangerousCommand(command, logger);
 
-      await logDebug(`Hook triggered with input: ${inputData.substring(0, 200)}...`);
+  if (dangerousCommands.length > 0) {
+    await logger.debug(
+      `Found dangerous command(s): ${dangerousCommands.map((c) => c.command).join(', ')}`,
+    );
 
-      const toolData = JSON.parse(inputData.trim());
-      const toolName = toolData.tool_name;
-      const toolInput = toolData.tool_input || {};
+    const commandsList = dangerousCommands
+      .map((cmd) => `- ${cmd.description}: ${cmd.reason}`)
+      .join('\n');
 
-      // Only check Bash tool calls
-      if (toolName !== 'Bash') {
-        await logDebug(`Tool is not Bash (${toolName}), allowing`);
-        await exitWithTime(0, 'not-bash', {
-          hookSpecificOutput: {
-            hookEventName: 'PreToolUse',
-            permissionDecision: 'allow',
-            permissionDecisionReason: `Tool is not Bash: ${toolName}`,
-          },
-        });
-        return;
-      }
+    await exitWithTime(0, 'dangerous-command-detected', logger, {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'ask',
+        permissionDecisionReason: `\n⚠️  检测到 Bash(${command})\n\n🚨 包含以下危险操作:\n${commandsList}\n\n❓ 是否继续执行？`,
+      },
+    });
+    return;
+  }
 
-      const command = toolInput.command || '';
-      await logDebug(`Checking bash command: ${command}`);
-
-      if (!command.trim()) {
-        await logDebug('Empty command, allowing');
-        await exitWithTime(0, 'empty-command', {
-          hookSpecificOutput: {
-            hookEventName: 'PreToolUse',
-            permissionDecision: 'allow',
-            permissionDecisionReason: 'Empty command',
-          },
-        });
-        return;
-      }
-
-      // Check for dangerous patterns
-      const dangerousCommands = await checkDangerousCommand(command);
-
-      if (dangerousCommands.length > 0) {
-        await logDebug(
-          `Found dangerous command(s): ${dangerousCommands.map((c) => c.command).join(', ')}`,
-        );
-
-        const commandsList = dangerousCommands
-          .map((cmd) => `- ${cmd.description}: ${cmd.reason}`)
-          .join('\n');
-
-        await exitWithTime(0, 'dangerous-command-detected', {
-          hookSpecificOutput: {
-            hookEventName: 'PreToolUse',
-            permissionDecision: 'ask',
-            permissionDecisionReason: `\n⚠️  检测到 Bash(${command})\n\n🚨 包含以下危险操作:\n${commandsList}\n\n❓ 是否继续执行？`,
-          },
-        });
-        return;
-      }
-
-      await logDebug('Command is safe, allowing');
-      await exitWithTime(0, 'safe-command', {
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'allow',
-          permissionDecisionReason: 'Command is safe',
-        },
-      });
-    } catch (error) {
-      await logDebug(`Error processing input: ${error.message}`);
-      console.error('PreToolUse Hook Error:', error);
-      await exitWithTime(1, 'error', {
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: `Hook error: ${error.message}`,
-        },
-      });
-    }
+  await logger.debug('Command is safe, allowing');
+  await exitWithTime(0, 'safe-command', logger, {
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'allow',
+      permissionDecisionReason: 'Command is safe',
+    },
   });
 }
 
-main();
+// Use the hookMain utility for consistent stdin handling
+hookMain(processHook, LOG_FILE);
