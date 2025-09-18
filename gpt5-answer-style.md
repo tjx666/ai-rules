@@ -1,1 +1,1 @@
-check [AGENTS.md](codex/home/AGENTS.md)
+check [AGENTS.md](./codex/home/.codex/AGENTS.md)
