@@ -35,7 +35,6 @@ This is the user level guide for Codex.
 - Avoid long bullet lists
 - When outputting viewpoints in lists, prioritize using ordered lists so I can reference them by number
 - Use `1.` format for ordered lists instead of `1)`
-- **Use proper Markdown headings (`##`, `###`) instead of bold text (`**text**`) for top-level logical sections**
 - **Mandatory**: Don't include useless parameters like utm_source in reference links, eg: `(stackoverflow.com (https://abc.com?utm_source=openai))`
 - You MUST use markdown code blocks for multi-line code and diffs, use inline code (backticks) for simple code snippets or code symbols
 
@@ -63,7 +62,7 @@ Always provide the corresponding code path in the following cases:
   - 🔄 Process flows, workflows, or iterations
   - 📊 Data, statistics, or metrics
   - 🎨 UI/UX improvements or design changes
-  - ⭐️ Recommendation levels when providing **multiple** solutions, 1~5 stars
+  - ⭐️ Recommendation levels **only** when providing **multiple** solutions, 1~5 stars
   - 🔴 🟡 🟢 💭 Priority levels: critical/strong suggestion/optimization/discussion, use with **section headings** to group same priority items
 - **Place emojis at the beginning of text descriptions** for better visual scanning (e.g., `🔧 Tool Overview` not `Tool Overview 🔧`)
 - Use emojis sparingly - typically add them to section headings
@@ -75,11 +74,11 @@ Always provide the corresponding code path in the following cases:
 **✅ Good structure:**
 
 ````markdown
-# 🎯 核心变更
+**🎯 核心变更**
 
 Successfully configured MCP services to use stdio transport mode.
 
-## 🔧 解决方案
+**🔧 解决方案**
 
 1. **💡 mcp-proxy 方案（推荐）** - 使用代理转换协议
    eg:
@@ -91,7 +90,7 @@ Successfully configured MCP services to use stdio transport mode.
 2. **直接修改** - 改写服务端代码支持 stdio
 3. **容器包装** - Docker 包装现有服务
 
-## 工作总结 ✅
+**✅ 工作总结**
 
 - 已将 grep 通过 mcp-proxy 以 stdio 适配（/path/to/config:13）
 - 已将 chrome 切换为 stdio 模式（/path/to/config:36）
@@ -116,7 +115,60 @@ Successfully configured MCP services to use stdio transport mode.
 2. 📍 已将 chrome 切换为 stdio 模式（/path/to/config:36）
 ```
 
-## 🛠️ Development Guidelines
+## Code Comments
+
+Must comment scenarios:
+
+- Complex business logic or algorithms
+- Module limitations and special behaviors
+- Important design decisions and trade-offs
+
+Write valuable comments, not noise:
+
+- **Comment WHY, not WHAT** - assume readers understand basic syntax
+- **Update comments when modifying code** - outdated comments are worse than no comments
+- **Use JSDoc for complex logic** - provide high-level overview with numbered steps when needed
+- Use JSDoc instead of line comments for better IDE documentation suggestions
+- Add space between Chinese and English content for better readability
+- Treat comments as code documentation, not changelog
+- Don't add comment for deleted old code
+
+**Quality test**: Ask yourself: "What useful information would a new colleague get from this comment in 6 months?" If the answer is "nothing", delete it.
+
+```typescript
+/**
+ * Processes payment request with multi-step validation:
+ *
+ * 1. Data validation
+ * 2. Risk assessment (low/medium/high handling)
+ * 3. Payment gateway call
+ * 4. User notification
+ */
+function processPayment(request: PaymentRequest) {
+  // ...
+}
+
+// !: Add one space for better readability
+// Budget 枚举类型
+export enum BudgetType {
+  Free = 'free',
+  /** Use jsdoc */
+  Package = 'package', // instead of line comments
+}
+
+// ❌ Bad: Change-oriented comments, and even add comment for deleted old code
+deactivateSubscription = async (subscriptionId: string) => {
+  // other front code...
+  // New design: Don't delete budget on cancellation, control access via subscription status
+};
+
+// ✅ Good: Use `1.`
+// 1. step1
+// ❌ Bad: Use `1)`
+// 1) step1
+```
+
+## Development Guidelines
 
 ### Core Coding Principles
 
@@ -179,6 +231,13 @@ _When encountering specific technical issues, bugs, or implementation blockers:_
 - ❌ Continue with 3+ consecutive failed modifications → Keep trying blindly
 - ✅ Continue with 3+ consecutive failed modifications → Add detailed logging, analyze root cause
 
+### Code Quality Checks
+
+- **Use descriptive variable names** - avoid abbreviations like `mo`, `btn`, `el`; prefer `mutationObserver`, `button`, `element`
+- Check for missing essential comments and verify comment language consistency
+- **Mandatory**: Run `mcp__vscode-mcp__get_diagnostics` after making a series of code changes to check for issues and apply fixes
+- **Mandatory**: Run and fix tests after add or modify tests
+
 ### 🚨 Forbidden Behaviors
 
 - For eslint warning level and cspell suggestion level error that are not actual issues, ignore them
@@ -186,64 +245,6 @@ _When encountering specific technical issues, bugs, or implementation blockers:_
   - Running `git commit`, `git push`
   - Starting dev server (`npm dev`, `next dev`, etc.)
   - Creating new test files (implementation should be manually reviewed by myself first)
-
-## Code Quality Checks
-
-- **Use descriptive variable names** - avoid abbreviations like `mo`, `btn`, `el`; prefer `mutationObserver`, `button`, `element`
-- Run `mcp__vscode-mcp__get_diagnostics` after making a series of code changes to check for issues and apply fixes
-
-## Code Comments
-
-Must comment scenarios:
-
-- Complex business logic or algorithms
-- Module limitations and special behaviors
-- Important design decisions and trade-offs
-
-Write valuable comments, not noise:
-
-- **Comment WHY, not WHAT** - assume readers understand basic syntax
-- **Update comments when modifying code** - outdated comments are worse than no comments
-- **Use JSDoc for complex logic** - provide high-level overview with numbered steps when needed
-- Use JSDoc instead of line comments for better IDE documentation suggestions
-- Add space between Chinese and English content for better readability
-- Treat comments as code documentation, not changelog
-- Don't add comment for deleted old code
-
-**Quality test**: Ask yourself: "What useful information would a new colleague get from this comment in 6 months?" If the answer is "nothing", delete it.
-
-```typescript
-/**
- * Processes payment request with multi-step validation:
- *
- * 1. Data validation
- * 2. Risk assessment (low/medium/high handling)
- * 3. Payment gateway call
- * 4. User notification
- */
-function processPayment(request: PaymentRequest) {
-  // ...
-}
-
-// !: Add one space for better readability
-// Budget 枚举类型
-export enum BudgetType {
-  Free = 'free',
-  /** Use jsdoc */
-  Package = 'package', // instead of line comments
-}
-
-// ❌ Bad: Change-oriented comments, and even add comment for deleted old code
-deactivateSubscription = async (subscriptionId: string) => {
-  // other front code...
-  // New design: Don't delete budget on cancellation, control access via subscription status
-};
-
-// ✅ Good: Use `1.`
-// 1. step1
-// ❌ Bad: Use `1)`
-// 1) step1
-```
 
 ## Tool Preferences
 
