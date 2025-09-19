@@ -12,7 +12,7 @@ Here are specific scenarios:
 
 **ABSOLUTELY FORBIDDEN**:
 
-- Never respond with: "你说得对!"
+- Never respond with "你说得对!" or "你说的说得完全正确!" etc. sycophantic behavior
 - Never directly implement changes without independent analysis
 - Never automatically agree to avoid conflict
 
@@ -50,7 +50,7 @@ You ask: "Why don't you use Promise.all instead of sequential awaits?"
 
 ## 💬 Communication
 
-- Use Chinese to communicate with me
+- Use Chinese for conversation and todo lists
 - Prefer English for coding, eg: code comments, ui text, commit message, pr description, etc.
 - You can call me `靖哥`
 
@@ -59,68 +59,66 @@ You ask: "Why don't you use Promise.all instead of sequential awaits?"
 - I use claude code within the integrated terminal of cursor IDE
 - You can safely use the vscode mcp tools because cursor is the fork of vscode
 
-## 🛠️ Development Guidelines
+## 🔧 Tool Preferences
 
-### Core Coding Principles
+**Note**: I have already installed all the tools mentioned below, they are ready to use.
 
-- Write clean, readable, reusable, efficient and testable code
-- Prioritize stability and maintainability over performance optimization
-- Prefer reusable and modular code over duplicating similar logic
-- Favor incremental changes over large refactors; when major refactoring is necessary, raise the issue and discuss with me first
-- Prefer compatible and reliable cutting-edge APIs for isolated, standalone new features
-- When facing uncertainty, explicitly output your assumptions, trade-offs, and validation plan rather than making assumptions
+### Package & Script Management
 
-### Development Lifecycle Guide
+- `ni` → npm install
+- `bun run` → npm run
+- `bunx` → npx
+- `tsx` → run TypeScript file directly
 
-_For complete feature development and requirement implementation:_
+### Bash Tools
 
-**Planning**:
+- `rg` → ALWAYS use instead of `grep`
+- Use `jq` to query large json and jsonl files
 
-- [ ] Read relevant template files and surrounding code to understand existing patterns
-- [ ] Prioritize documentation and existing solution search (WebSearch + context7)
-- [ ] Verify the answer by reading the actual code implementation
-- [ ] Understand requirements, think step by step
-- [ ] create todo list
+### Web Search
 
-**Implementation**:
+- `WebSearch` → search latest web content
+- `mcp__SearXNG__search` → comprehensive multi-engine search when WebSearch is insufficient
 
-- [ ] Maintain code consistency: read template files, adjacent similar files, and surrounding code to understand existing patterns before making changes
-- [ ] Fail fast: expose errors early, ensure clear API behavior, and make callers take appropriate responsibility
-- [ ] Maximize aesthetic and interaction design within requirement constraints for frontend UI
+**Note**: Include "2025" in search keywords for latest information
 
-**Acceptance**:
+### GitHub Contents
 
-- [ ] Verify the implementation by tests or temp nodejs test scripts
-- [ ] Review implementation after multiple modifications to the same code block
-- [ ] Run quality checks
-- [ ] Update the relevant documentation if exists
-- [ ] Provide complete reference links
+**Mandatory**: use `gh` to fetch/edit github issue, pr, discussion body and comments, instead of `WebFetch` tool
 
-### Problem Solving Methodology
+get issue comments strategies:
 
-_When encountering specific technical issues, bugs, or implementation blockers:_
+- by reactions (most helpful): `gh api repos/owner/repo/issues/123/comments --paginate | jq 'sort_by(-.reactions.total_count) | .[0:3]'`
+- by time (latest + earliest): `jq 'sort_by(.created_at) | .[0:3], .[-3:]'`
 
-**Standard Process**:
+**important**: When submit new issue/pr, be sure to read and follow the related template
 
-1. **Independent Analysis** → 2. **Documentation/Search Research** → 3. **Implementation** → 4. **Verification**
+### Docs Search
 
-**Failure Handling**:
+- `context7` → get latest usage when installing new packages
+- `mcp__grep__searchGitHub` → search API usage patterns across GitHub
 
-- After 3 failed attempts → Add debug logging → Request runtime logs
-- New feature implementation repeatedly encounters problems → Consider complete rewrite or seek assistance
+### TypeScript Validation
 
-**Example Scenarios**:
+- `mcp__vscode-mcp__get_diagnostics` → validate single TS file (fast)
+- Never use `tsc --noEmit single-file.ts`, it will validate entire project, very slow
 
-- ❌ Continue with 3+ consecutive failed modifications → Keep trying blindly
-- ✅ Continue with 3+ consecutive failed modifications → Add detailed logging, analyze root cause
+### VSCode MCP Tools
 
-### 🚨 Forbidden Behaviors
+- use `mcp__vscode-mcp__get_references` to find the symbol usages and determine the scope of refactoring, instead of `Grep` and `Search`
+- use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead of `Edit` tool
+- prefer `mcp__vscode-mcp__execute_command` run `editor.action.fixAll` command over `Bash(eslint --fix)` to auto-fix ESLint and other linter errors
 
-**MANDATORY**: Wait for explicit request before:
+### Builtin `Read` Tool
 
-- Running `git commit`, `git push`
-- Starting dev server (`npm dev`, `next dev`, etc.)
-- Creating new test files
+**Mandatory**: Always read the entire file content instead of partial selections to save tokens and avoid context contamination in the following cases:
+
+- When I provide the file path in the user message
+- When I send you partial file content snippets
+- When reading a file for the first time
+- When the file is known to be less than 500 lines
+
+Remember: Your context window is very large, so don't worry about token costs when reading complete files. Getting sufficient and accurate context information is more important than token efficiency.
 
 ## 📝 Output Style
 
@@ -186,7 +184,7 @@ Always provide complete references likes or filePaths at the end of responses, a
 - "The `resolveFilePath` function handles this"
 - "VSCode has a known limitation for undo operations"
 
-**References:**
+**🔗 References:**
 
 - `resolveFilePath`: packages/vscode-mcp-bridge/src/utils/workspace.ts:40
 - VSCode undo limitation: https://github.com/microsoft/vscode/issues/77190
@@ -194,40 +192,44 @@ Always provide complete references likes or filePaths at the end of responses, a
 
 ## 💭 Code Comments
 
-Write valuable comments, not noise:
-
-- **Comment WHY, not WHAT** - assume readers understand basic syntax
-- **Update comments when modifying code** - outdated comments are worse than no comments
-- **Use JSDoc for complex logic** - provide high-level overview with numbered steps when needed
-- Use JSDoc instead of line comments for better IDE documentation suggestions
-- Add space between Chinese and English content for better readability
-
-Must comment scenarios:
+### Must comment scenarios
 
 - Complex business logic or algorithms
-- Module limitations and special behaviors
+- Special behaviors
 - Important design decisions and trade-offs
+
+### Comment Principles
+
+- **Comment WHY, not WHAT, not CHANGELOG** - Write valuable comments, not noise
+- **Update comments when modifying code** - outdated comments are worse than no comments
+- **JSDoc instead of line comments** - better IDE hover suggestions
+- Provide high-level overview for complex functions, comment each step clearly in the function body
+- Add space between Chinese and English words for better readability
+- Don't add comment for deleted old code
+
+**Quality test**: Ask yourself: "What useful information would a new colleague get from this comment in 6 months?" If the answer is "nothing", delete it.
 
 ```typescript
 /**
- * Processes payment request with multi-step validation:
- *
- * 1. Data validation
- * 2. Risk assessment (low/medium/high handling)
- * 3. Payment gateway call
- * 4. User notification
+ * Processes payment request with multi-step validation
  */
 function processPayment(request: PaymentRequest) {
-  // ...
+  // 1. Data validation
+  // some code...
+  // 2. Risk assessment (low/medium/high handling)
+  // some code...
+  // 3. Payment gateway call
+  // some code...
+  // 4. User notification
+  // some code...
 }
 
-// !: Add one space for better readability
-// Budget 枚举类型
+/* ❌ Budget枚举类型 */
+/* ✅ Budget 枚举类型 */
 export enum BudgetType {
   Free = 'free',
-  /** Use jsdoc */
-  Package = 'package', // instead of line comments
-  Subscription = 'subscription',
+  /** ✅ use jsdoc */
+  Package = 'package', // ❌ instead of line comments
 }
 ```
 
@@ -235,66 +237,74 @@ export enum BudgetType {
 
 - Don't leave code block language empty, use `plaintext` instead
 - Always add one blank line after headings
-- For optimization prompts:
-  - Use XML tags for complex content (nested markdown code blocks)
 
-## 🔧 Tool Preferences
+## 🛠️ Development Guidelines
 
-**Note**: I have already installed all the tools mentioned below, they are ready to use.
+### Core Coding Principles
 
-### Package & Script Management
+- Write clean, readable, reusable, efficient and testable code
+- Prioritize stability and maintainability over performance optimization
+- Favor incremental changes over large refactors; when major refactoring is necessary, raise the issue and discuss with me first
+- Prefer well-supported and reliable cutting-edge APIs for isolated, standalone new features
+- Extract reusable functions, types, or modules to eliminate code duplication while avoiding large-scale refactoring
+- When facing uncertainty, explicitly output your assumptions, trade-offs, and validation plan rather than making assumptions
+- Trust agreed prerequisites and avoid defensive coding against promised invariants; if conflicts arise, update the plan rather than add unnecessary guards.
+- Premature optimization is the root of all evil - implement functionality with simple, direct code first, then optimize when needed (avoid adding caching/debouncing upfront or splitting into multiple files prematurely)
 
-- `ni` → npm install
-- `bun run` → npm run
-- `bunx` → npx
-- `tsx` → run TypeScript file directly
+### Development Lifecycle Guide
 
-### Bash Tools
+_For complete feature development and requirement implementation:_
 
-- `rg` → ALWAYS use instead of `grep`
-- Use `jq` to query large json and jsonl files
+**Planning**:
 
-### Web Search
+- [ ] Read relevant template files and surrounding code to understand existing patterns
+- [ ] Prioritize documentation and existing solution search (WebSearch + context7)
+- [ ] Verify the answer by reading the actual code implementation
+- [ ] Understand requirements, think step by step
+- [ ] create todo list
 
-- `WebSearch` → search latest web content
-- `mcp__SearXNG__search` → comprehensive multi-engine search when WebSearch is insufficient
+**Implementation**:
 
-**Note**: Include "2025" in search keywords for latest information
+- [ ] Maintain code consistency: read template files, adjacent similar files, and surrounding code to understand existing patterns before making changes
+- [ ] Fail fast: expose errors early, ensure clear API behavior, and make callers take appropriate responsibility
+- [ ] Maximize aesthetic and interaction design within requirement constraints for frontend UI
 
-### GitHub Contents
+**Acceptance**:
 
-**Mandatory**: use `gh` to fetch/edit github issue, pr, discussion body and comments, instead of `WebFetch` tool
+- [ ] Verify the implementation by tests or temp nodejs test scripts
+- [ ] Review implementation after multiple modifications to the same code block
+- [ ] Run quality checks
+- [ ] Update the relevant documentation if exists
 
-get issue comments strategies:
+**Output Working Summary**:
 
-- by reactions (most helpful): `gh api repos/owner/repo/issues/123/comments --paginate | jq 'sort_by(-.reactions.total_count) | .[0:3]'`
-- by time (latest + earliest): `jq 'sort_by(.created_at) | .[0:3], .[-3:]'`
+- [ ] Review output formatting requirements
+- [ ] List deviations from the original plan and key decisions made during implementation for manual review of unplanned issues
+- [ ] Provide optimization suggestions
+- [ ] Provide complete reference links
 
-**important**: When submit new issue/pr, be sure to read and follow the related template
+### Problem Solving Methodology
 
-### Docs Search
+_When encountering specific technical issues, bugs, or implementation blockers:_
 
-- `context7` → get latest usage when installing new packages
-- `mcp__grep__searchGitHub` → search API usage patterns across GitHub
+**Standard Process**:
 
-### TypeScript Validation
+1. **Independent Analysis** → 2. **Documentation/Search Research** → 3. **Implementation** → 4. **Verification**
 
-- `mcp__vscode-mcp__get_diagnostics` → validate single TS file (fast)
-- Never use `tsc --noEmit single-file.ts`, it will validate entire project, very slow
+**Failure Handling**:
 
-### VSCode MCP Tools
+- After 3 failed attempts → Add debug logging → Request runtime logs
+- New feature implementation repeatedly encounters problems → Consider complete rewrite or seek assistance
 
-- use `mcp__vscode-mcp__get_references` to find the symbol usages and determine the scope of refactoring, instead of `Grep` and `Search`
-- use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead `Edit` tool
-- prefer `mcp__vscode-mcp__execute_command` run `editor.action.fixAll` command over `Bash(eslint --fix)` to auto-fix ESLint and other linter errors
+**Example Scenarios**:
 
-### Builtin `Read` Tool
+- ❌ Continue with 3+ consecutive failed modifications → Keep trying blindly
+- ✅ Continue with 3+ consecutive failed modifications → Add detailed logging, analyze root cause
 
-**Mandatory**: Always read the entire file content instead of partial selections to save tokens and avoid context contamination in the following cases:
+### 🚨 Forbidden Behaviors
 
-- When I provide the file path in the user message
-- When I send you partial file content snippets
-- When reading a file for the first time
-- When the file is known to be less than 500 lines
-
-Remember: Your context window is very large, so don't worry about token costs when reading complete files. Getting sufficient and accurate context information is more important than token efficiency.
+- For eslint warning level and cspell suggestion level error that are not actual issues, ignore them
+- **MANDATORY**: Wait for explicit request before:
+  - Running `git commit`, `git push`
+  - Starting dev server (`npm dev`, `next dev`, etc.)
+  - Creating new test files (implementation should be manually reviewed by myself first)

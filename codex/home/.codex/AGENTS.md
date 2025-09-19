@@ -8,187 +8,53 @@ This is the user level guide for Codex.
 - Prefer English for coding, eg: code comments, ui text, commit message, pr description, etc.
 - You can call me `靖哥`
 
-## Output Style
-
-### Response Principles
-
-- Lead with a concise 1-2 sentence core conclusion or summary, then dive into detailed explanations
-  - The heading doesn't need to be labeled as "🎯 核心变更" - it can be flexible or even omitted. The key principle is conclusion-first structure
-  - **Keep conclusions high-level and concise** - avoid technical details like file paths or line numbers in summary sections
-- Focus responses on the specific discussion topic rather than exhaustively listing all findings
-- Never provide next step suggestions at the end of responses
-- Write in complete, clear sentences, like a Senior Developer when talking to a junior engineer
-- Always provide enough context for the user to understand - in a simple & short way
-- Make sure to clearly explain your assumptions and your conclusions
-- When analyzing issues, always provide a recommended solution along with the root cause analysis
-
-### Content Structure
-
-- Keep structure simple: max 3 levels for technical explanations (from conclusion to details to notes)
-- When organizing different types of information (conclusions, code locations, references, notes), structure with secondary headings
-- When presenting multiple viewpoints in code reviews and similar contexts, group them by priority and use section headings to separate them
-- When providing multiple solutions, put the most recommended solution first and clearly mark it as the recommended approach
-- Avoid redundant information across sections
-
-### Format Standards
-
-- Each long sentence(include list item) should be followed by **two** newline characters for better readability.
-- Avoid long bullet lists
-- When outputting viewpoints in lists, prioritize using ordered lists so I can reference them by number
-- Use `1.` format for ordered lists instead of `1)`
-- **Mandatory**: Don't include useless parameters like utm_source in reference links, eg: `(stackoverflow.com (https://abc.com?utm_source=openai))`
-- You MUST use markdown code blocks for multi-line code and diffs, use inline code (backticks) for simple code snippets, code symbols, filePath
-
-### Provide References
-
-- Always provide complete references at the end of responses, using simple inline references in the main content
-- For file path format
-  - row and column: `src/path/to/file.ts:10:20` (line 10, column 20)
-  - range: `src/path/to/file.ts:10-20` (lines 10 to 20)
-- Some case provide file path in the main content:
-  - When asked to locate specific logic
-  - when explaining call chains or code flow
-
-#### Reference Categories
-
-- **External resources**: Full clickable links for GitHub issues, documentation, API references
-- **Source code references**: Complete file paths for functions, classes, or code snippets mentioned
-
-#### Reference Examples:
-
-❌ **Bad inline references:**
-
-```markdown
-- "The `resolveFilePath` function handles this"
-- "GitHub issue #77190 explains the limitation"
-```
-
-✅ **Good with end references:**
-
-```markdown
-- "The `resolveFilePath` function handles this"
-- "VSCode has a known limitation for undo operations"
-
-**🔗 References:**
-
-- `resolveFilePath`: packages/vscode-mcp-bridge/src/utils/workspace.ts:40
-- VSCode undo limitation: https://github.com/microsoft/vscode/issues/77190
-```
-
-### Visual Enhancement
-
-- **Use emojis functionally, not decoratively**:
-  - ✅ Status indicators (completion, success, confirmation)
-  - ❌ Errors, failures, or things to avoid
-  - 🎯 Key conclusions or main points
-  - ⚠️ Important warnings or considerations
-  - 💡 Tips, insights, or helpful notes
-  - 🔧 Action items, tools, or implementation steps
-  - 🔍 Analysis, investigation, or detailed examination
-  - 📝 Documentation, examples, or code snippets
-  - 🚀 Performance improvements or optimizations
-  - 🐛 Bug fixes or debugging information
-  - 🔄 Process flows, workflows, or iterations
-  - 📊 Data, statistics, or metrics
-  - 🎨 UI/UX improvements or design changes
-  - ⭐️ Recommendation levels (1-5 stars) **only** when providing **multiple** solutions
-  - 🔴 🟡 🟢 💭 Priority levels: critical/strong suggestion/optimization/discussion, use with **section headings** to group items by priority
-- **Place emojis at the beginning of descriptions** for better visual scanning (e.g., `🔧 Tool Overview` not `Tool Overview 🔧`)
-- **Use emojis sparingly** - typically only in section headings
-- **Mandatory**: Except for ✅❌ in todo lists, avoid **repeating** the same emoji multiple times in one response
-
-### Examples
-
-**✅ Good structure:**
-
-````markdown
-**🎯 核心变更**
-
-Successfully configured MCP services to use stdio transport mode.
-
-**🔧 解决方案**
-
-1. **🚀 mcp-proxy 方案（推荐）** - 使用代理转换协议
-   eg:
-   ```toml
-   [mcp_servers.grep]
-   command = "mcp-proxy"
-   args = ["--transport=streamablehttp", "https://mcp.grep.app"]
-   ```
-2. **直接修改** - 改写服务端代码支持 `stdio`
-3. **容器包装** - `Docker` 包装现有服务
-
-**✅ 工作总结**
-
-- 已将 `grep` 通过 `mcp-proxy` 以 `stdio` 适配（`/path/to/config:13`）
-- 已将 `chrome` 切换为 `stdio` 模式（`/path/to/config:36`）
-````
-
-**❌ Bad structure:**
-
-```markdown
-**解决方案**
-
-- mcp-proxy 方案 - 使用代理转换协议
-  eg:
-  [mcp_servers.grep]
-  command = "mcp-proxy"
-  args = ["--transport=streamablehttp", "https://mcp.grep.app"]
-- 直接修改 - 改写服务端代码支持 stdio
-- 容器包装 - Docker 包装现有服务
-
-**工作总结** ✅
-
-1. 📍 已将 grep 通过 mcp-proxy 以 stdio 适配（/path/to/config:13）
-2. 📍 已将 chrome 切换为 stdio 模式（/path/to/config:36）
-```
-
 ## Code Comments
 
-Must comment scenarios:
+### Must comment scenarios
 
 - Complex business logic or algorithms
-- Module limitations and special behaviors
+- Special behaviors
 - Important design decisions and trade-offs
 
-Write valuable comments, not noise:
+### Comment Principles
 
-- **Comment WHY, not WHAT** - assume readers understand basic syntax
+- **Comment WHY, not WHAT, not CHANGELOG** - Write valuable comments, not noise
 - **Update comments when modifying code** - outdated comments are worse than no comments
-- **Use JSDoc for complex logic** - provide high-level overview with numbered steps when needed
-- Use JSDoc instead of line comments for better IDE documentation suggestions
-- Add space between Chinese and English content for better readability
-- Treat comments as code documentation, not changelog
+- **JSDoc instead of line comments** - better IDE hover suggestions
+- Provide high-level overview for complex functions, comment each step clearly in the function body
+- Add space between Chinese and English words for better readability
 - Don't add comment for deleted old code
 
 **Quality test**: Ask yourself: "What useful information would a new colleague get from this comment in 6 months?" If the answer is "nothing", delete it.
 
 ```typescript
 /**
- * Processes payment request with multi-step validation:
- *
- * 1. Data validation
- * 2. Risk assessment (low/medium/high handling)
- * 3. Payment gateway call
- * 4. User notification
+ * Processes payment request with multi-step validation
  */
 function processPayment(request: PaymentRequest) {
-  // ...
+  // 1. Data validation
+  // some code...
+  // 2. Risk assessment (low/medium/high handling)
+  // some code...
+  // 3. Payment gateway call
+  // some code...
+  // 4. User notification
+  // some code...
 }
 
-// !: Add one space for better readability
-// Budget 枚举类型
+/* ❌ Budget枚举类型 */
+/* ✅ Budget 枚举类型 */
 export enum BudgetType {
   Free = 'free',
-  /** Use jsdoc */
-  Package = 'package', // instead of line comments
+  /** ✅ use jsdoc */
+  Package = 'package', // ❌ instead of line comments
 }
 
 // ❌ Bad: Change-oriented comments, and even add comment for deleted old code
-deactivateSubscription = async (subscriptionId: string) => {
+async function deactivateSubscription(subscriptionId: string) {
   // other front code...
   // New design: Don't delete budget on cancellation, control access via subscription status
-};
+}
 
 // ✅ Good: Use `1.`
 // 1. step1
