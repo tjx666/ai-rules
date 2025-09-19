@@ -64,7 +64,7 @@ async function deactivateSubscription(subscriptionId: string) {
 
 ## Development Guidelines
 
-### Core Coding Principles
+### Core Principles
 
 #### Universal Principles
 
@@ -87,26 +87,23 @@ async function deactivateSubscription(subscriptionId: string) {
 
 ### Development Lifecycle Guide
 
-_For complete feature development and requirement implementation:_
-
 **Exploration/Planning**:
 
-- [ ] Read relevant template files and surrounding code to understand existing patterns
+- [ ] Understand requirements, think step by step
 - [ ] Prioritize documentation and existing solution search (WebSearch + context7)
 - [ ] Verify the answer by reading the actual code implementation
-- [ ] Understand requirements, think step by step
 - [ ] create todo list
 
 **Implementation/Refactoring/Fixing Bugs**:
 
-- [ ] Maintain code consistency: read template files, adjacent similar files, and surrounding code to understand existing patterns before making changes
-- [ ] Fail fast: expose errors early, ensure clear API behavior, and make callers take appropriate responsibility
+- [ ] Read relevant template files and surrounding code to understand existing patterns
+- [ ] Fail fast: throw errors for invalid inputs/states instead of silently handling them with fallback logic, expose problems early to the caller
 - [ ] Maximize aesthetic and interaction design within requirement constraints for frontend UI
 
 **Acceptance/Verification**:
 
 - [ ] Verify the implementation by tests or temp nodejs test scripts
-- [ ] Review implementation after multiple modifications to the same code block
+- [ ] Review implementation after multiple incremental modifications to the same code block - consider if the changes can be refactored into a single, more coherent modification
 - [ ] Run quality checks
 - [ ] Update the relevant documentation if exists
 
@@ -115,25 +112,17 @@ _For complete feature development and requirement implementation:_
 - [ ] Review output formatting requirements
 - [ ] List deviations from the original plan and key decisions made during implementation for manual review of unplanned issues
 - [ ] Provide optimization suggestions
-- [ ] Provide complete reference links
+- [ ] Provide complete reference links at end of output
 
-### Problem Solving Methodology
+### How to handle hard problems
 
-_When encountering specific technical issues, bugs, or implementation blockers:_
+**Definition**: Problems that remain unsolved after two attempts
 
-**Standard Process**:
+**Useful approaches**:
 
-1. **Independent Analysis** → 2. **Documentation/Search Research** → 3. **Implementation** → 4. **Verification**
-
-**Failure Handling**:
-
-- After 3 failed attempts → Add debug logging → Request runtime logs
-- New feature implementation repeatedly encounters problems → Consider complete rewrite or seek assistance
-
-**Example Scenarios**:
-
-- ❌ Continue with 3+ consecutive failed modifications → Keep trying blindly
-- ✅ Continue with 3+ consecutive failed modifications → Add detailed logging, analyze root cause
+- Try web search for solutions
+- Add debug logging → request runtime logs, use pair programming to troubleshoot
+- Consider complete rewrite or seek assistance when implementing new features
 
 ### Code Quality Checks
 
@@ -142,13 +131,18 @@ _When encountering specific technical issues, bugs, or implementation blockers:_
 - **Mandatory**: Run `mcp__vscode-mcp__get_diagnostics` after making a series of code changes to check for issues and apply fixes
 - **Mandatory**: Run and fix tests after add or modify tests
 
-### 🚨 Forbidden Behaviors
+### How to handle lint errors
 
 - For eslint warning level and cspell suggestion level error that are not actual issues, ignore them instead of add disable comments
-- **MANDATORY**: Wait for explicit request before:
-  - Running `git commit`, `git push`
-  - Starting dev server (`npm dev`, `next dev`, etc.)
-  - Creating new test files (implementation should be manually reviewed by myself first)
+- Lint tools can produce false positives; evaluate warnings based on business context and explicitly state when fixes aren't needed
+
+### Forbidden Operations
+
+Wait for explicit request before:
+
+- Running `git commit`, `git push`
+- Starting dev server (`npm dev`, `next dev`, etc.)
+- Creating new test files (implementation should be manually reviewed by myself first)
 
 ## Tool Preferences
 
@@ -183,21 +177,21 @@ get issue comments strategies:
 - by reactions (most helpful): `gh api repos/owner/repo/issues/123/comments --paginate | jq 'sort_by(-.reactions.total_count) | .[0:3]'`
 - by time (latest + earliest): `jq 'sort_by(.created_at) | .[0:3], .[-3:]'`
 
-**important**: When submit new issue/pr, be sure to read and follow the related template
+**important**: When submit new issue/pr, be sure to read and follow the related template under `.github`
 
 ### Docs Search
 
 - `context7` → get latest usage when installing new packages
 - `mcp__grep__searchGitHub` → search API usage patterns across GitHub
 
-### TypeScript Validation
+### Lint Checks
 
-- `mcp__vscode-mcp__get_diagnostics` → validate single TS file (fast)
+- use `mcp__vscode-mcp__get_diagnostics` to get typescript and eslint errors
 - Never use `tsc --noEmit single-file.ts`, it will validate entire project, very slow
 
 ### VSCode MCP Tools
 
 - use `mcp__vscode-mcp__get_references` to find the symbol usages and determine the scope of refactoring, instead of `Grep` and `Search`
-- use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead of `Edit` tool
-- prefer `mcp__vscode-mcp__execute_command` run `editor.action.fixAll` command over `Bash(eslint --fix)` to auto-fix ESLint and other linter errors
-- use `mcp__vscode_get_symbol_lsp_info` to get symbol type information, especially useful when you need to define a parameter type but are unsure of the exact type
+- use `mcp__vscode-mcp__rename_symbol` to rename a symbol with import path and reference auto updates, instead of `Search` and `Edit`
+- use `mcp__vscode-mcp__execute_command` with `editor.action.fixAll` command to auto-fix linter errors, instead of running `eslint --fix` in shell
+- use `mcp__vscode_get_symbol_lsp_info` to get symbol type information, especially useful when you don't know how to define function parameters or return types
