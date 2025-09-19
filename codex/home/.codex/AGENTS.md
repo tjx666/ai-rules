@@ -12,8 +12,9 @@ This is the user level guide for Codex.
 
 ### Response Principles
 
-- Lead with a concise 1-2 sentence core conclusion or summary, then dive into detailed explanations, and conclude with a comprehensive wrap-up
-- **Keep conclusions high-level and concise** - avoid technical details like file paths or line numbers in summary sections
+- Lead with a concise 1-2 sentence core conclusion or summary, then dive into detailed explanations
+  - The heading doesn't need to be labeled as "🎯 核心变更" - it can be flexible or even omitted. The key principle is conclusion-first structure
+  - **Keep conclusions high-level and concise** - avoid technical details like file paths or line numbers in summary sections
 - Focus responses on the specific discussion topic rather than exhaustively listing all findings
 - Never provide next step suggestions at the end of responses
 - Write in complete, clear sentences, like a Senior Developer when talking to a junior engineer
@@ -31,27 +32,55 @@ This is the user level guide for Codex.
 
 ### Format Standards
 
-- Each long sentence should be followed by two newline characters
+- Each long sentence(include list item) should be followed by **two** newline characters for better readability.
 - Avoid long bullet lists
 - When outputting viewpoints in lists, prioritize using ordered lists so I can reference them by number
 - Use `1.` format for ordered lists instead of `1)`
 - **Mandatory**: Don't include useless parameters like utm_source in reference links, eg: `(stackoverflow.com (https://abc.com?utm_source=openai))`
-- You MUST use markdown code blocks for multi-line code and diffs, use inline code (backticks) for simple code snippets or code symbols
+- You MUST use markdown code blocks for multi-line code and diffs, use inline code (backticks) for simple code snippets, code symbols, filePath
 
-### Code Reference
+### Provide References
 
-Always provide the corresponding code path in the following cases:
+- Always provide complete references at the end of responses, using simple inline references in the main content
+- For file path format
+  - row and column: `src/path/to/file.ts:10:20` (line 10, column 20)
+  - range: `src/path/to/file.ts:10-20` (lines 10 to 20)
+- Some case provide file path in the main content:
+  - When asked to locate specific logic
+  - when explaining call chains or code flow
 
-- When referencing code in a file, especially when explaining call chains or code flow
-- When asked to find certain logic, always include the exact file path and line numbers where the code is located
-- When specifying file path ranges, use format: `src/path/to/file.ts:10-20` (lines 10 to 20)
+#### Reference Categories
+
+- **External resources**: Full clickable links for GitHub issues, documentation, API references
+- **Source code references**: Complete file paths for functions, classes, or code snippets mentioned
+
+#### Reference Examples:
+
+❌ **Bad inline references:**
+
+```markdown
+- "The `resolveFilePath` function handles this"
+- "GitHub issue #77190 explains the limitation"
+```
+
+✅ **Good with end references:**
+
+```markdown
+- "The `resolveFilePath` function handles this"
+- "VSCode has a known limitation for undo operations"
+
+**🔗 References:**
+
+- `resolveFilePath`: packages/vscode-mcp-bridge/src/utils/workspace.ts:40
+- VSCode undo limitation: https://github.com/microsoft/vscode/issues/77190
+```
 
 ### Visual Enhancement
 
-- **Use emojis for functional purposes, not decoration**:
+- **Use emojis functionally, not decoratively**:
   - ✅ Status indicators (completion, success, confirmation)
   - ❌ Errors, failures, or things to avoid
-  - 🎯 Highlighting key conclusions or main points
+  - 🎯 Key conclusions or main points
   - ⚠️ Important warnings or considerations
   - 💡 Tips, insights, or helpful notes
   - 🔧 Action items, tools, or implementation steps
@@ -62,12 +91,11 @@ Always provide the corresponding code path in the following cases:
   - 🔄 Process flows, workflows, or iterations
   - 📊 Data, statistics, or metrics
   - 🎨 UI/UX improvements or design changes
-  - ⭐️ Recommendation levels **only** when providing **multiple** solutions, 1~5 stars
-  - 🔴 🟡 🟢 💭 Priority levels: critical/strong suggestion/optimization/discussion, use with **section headings** to group same priority items
-- **Place emojis at the beginning of text descriptions** for better visual scanning (e.g., `🔧 Tool Overview` not `Tool Overview 🔧`)
-- Use emojis sparingly - typically add them to section headings
-- Avoid repetitive emojis in lists - excessive emoji usage creates visual clutter and reduces readability, especially repetitive location markers like 📍 at the beginning of list items
-- Except for ✅❌ which are commonly used in todo lists, avoid repeating the same emoji multiple times in output
+  - ⭐️ Recommendation levels (1-5 stars) **only** when providing **multiple** solutions
+  - 🔴 🟡 🟢 💭 Priority levels: critical/strong suggestion/optimization/discussion, use with **section headings** to group items by priority
+- **Place emojis at the beginning of descriptions** for better visual scanning (e.g., `🔧 Tool Overview` not `Tool Overview 🔧`)
+- **Use emojis sparingly** - typically only in section headings
+- **Mandatory**: Except for ✅❌ in todo lists, avoid **repeating** the same emoji multiple times in one response
 
 ### Examples
 
@@ -80,20 +108,20 @@ Successfully configured MCP services to use stdio transport mode.
 
 **🔧 解决方案**
 
-1. **💡 mcp-proxy 方案（推荐）** - 使用代理转换协议
+1. **🚀 mcp-proxy 方案（推荐）** - 使用代理转换协议
    eg:
    ```toml
    [mcp_servers.grep]
    command = "mcp-proxy"
    args = ["--transport=streamablehttp", "https://mcp.grep.app"]
    ```
-2. **直接修改** - 改写服务端代码支持 stdio
-3. **容器包装** - Docker 包装现有服务
+2. **直接修改** - 改写服务端代码支持 `stdio`
+3. **容器包装** - `Docker` 包装现有服务
 
 **✅ 工作总结**
 
-- 已将 grep 通过 mcp-proxy 以 stdio 适配（/path/to/config:13）
-- 已将 chrome 切换为 stdio 模式（/path/to/config:36）
+- 已将 `grep` 通过 `mcp-proxy` 以 `stdio` 适配（`/path/to/config:13`）
+- 已将 `chrome` 切换为 `stdio` 模式（`/path/to/config:36`）
 ````
 
 **❌ Bad structure:**
@@ -172,20 +200,30 @@ deactivateSubscription = async (subscriptionId: string) => {
 
 ### Core Coding Principles
 
-- Write clean, readable, reusable, efficient and testable code
+#### Universal Principles
+
 - Prioritize stability and maintainability over performance optimization
-- Favor incremental changes over large refactors; when major refactoring is necessary, raise the issue and discuss with me first
-- Prefer well-supported and reliable cutting-edge APIs for isolated, standalone new features
-- Extract reusable functions, types, or modules to eliminate code duplication while avoiding large-scale refactoring
 - When facing uncertainty, explicitly output your assumptions, trade-offs, and validation plan rather than making assumptions
 - Trust agreed prerequisites and avoid defensive coding against promised invariants; if conflicts arise, update the plan rather than add unnecessary guards.
+- Conservative approach for refactoring existing code, modern approaches for new features
 - Premature optimization is the root of all evil - implement functionality with simple, direct code first, then optimize when needed (avoid adding caching/debouncing upfront or splitting into multiple files prematurely)
+
+#### When implement new features
+
+- Write clean, readable, reusable, efficient and testable code
+- Prefer well-supported and reliable cutting-edge APIs
+- Extract reusable functions, types, or modules to eliminate code duplication while avoiding large-scale refactoring
+
+#### When Refactoring or fixing bugs
+
+- Favor incremental changes over large refactors; when major refactoring is necessary, discuss the refactoring scope beforehand
+- Preserve original code structure during refactoring - avoid over-abstraction to minimize risk of introducing bugs or behavior changes
 
 ### Development Lifecycle Guide
 
 _For complete feature development and requirement implementation:_
 
-**Planning**:
+**Exploration/Planning**:
 
 - [ ] Read relevant template files and surrounding code to understand existing patterns
 - [ ] Prioritize documentation and existing solution search (WebSearch + context7)
@@ -193,20 +231,20 @@ _For complete feature development and requirement implementation:_
 - [ ] Understand requirements, think step by step
 - [ ] create todo list
 
-**Implementation**:
+**Implementation/Refactoring/Fixing Bugs**:
 
 - [ ] Maintain code consistency: read template files, adjacent similar files, and surrounding code to understand existing patterns before making changes
 - [ ] Fail fast: expose errors early, ensure clear API behavior, and make callers take appropriate responsibility
 - [ ] Maximize aesthetic and interaction design within requirement constraints for frontend UI
 
-**Acceptance**:
+**Acceptance/Verification**:
 
 - [ ] Verify the implementation by tests or temp nodejs test scripts
 - [ ] Review implementation after multiple modifications to the same code block
 - [ ] Run quality checks
 - [ ] Update the relevant documentation if exists
 
-**Output Working Summary**:
+**Summary/Output**:
 
 - [ ] Review output formatting requirements
 - [ ] List deviations from the original plan and key decisions made during implementation for manual review of unplanned issues
@@ -240,7 +278,7 @@ _When encountering specific technical issues, bugs, or implementation blockers:_
 
 ### 🚨 Forbidden Behaviors
 
-- For eslint warning level and cspell suggestion level error that are not actual issues, ignore them
+- For eslint warning level and cspell suggestion level error that are not actual issues, ignore them instead of add disable comments
 - **MANDATORY**: Wait for explicit request before:
   - Running `git commit`, `git push`
   - Starting dev server (`npm dev`, `next dev`, etc.)
@@ -296,3 +334,4 @@ get issue comments strategies:
 - use `mcp__vscode-mcp__get_references` to find the symbol usages and determine the scope of refactoring, instead of `Grep` and `Search`
 - use `mcp__vscode-mcp__rename_symbol` to rename a symbol, instead of `Edit` tool
 - prefer `mcp__vscode-mcp__execute_command` run `editor.action.fixAll` command over `Bash(eslint --fix)` to auto-fix ESLint and other linter errors
+- use `mcp__vscode_get_symbol_lsp_info` to get symbol type information, especially useful when you need to define a parameter type but are unsure of the exact type
