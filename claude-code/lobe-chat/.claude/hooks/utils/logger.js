@@ -17,7 +17,8 @@ const LOG_DIR = path.join(PROJECT_DIR, '.claude', 'logs');
  * @param {boolean} forceLog - Force logging regardless of DEBUG flag
  */
 async function logDebug(logFile, message, forceLog = false) {
-  const DEBUG = !!process.env.CC_HOOK_DEBUG;
+  // const DEBUG = !!process.env.CC_HOOK_DEBUG;
+  const DEBUG = true;
 
   if (DEBUG || forceLog) {
     if (!fsSync.existsSync(LOG_DIR)) {
@@ -79,7 +80,7 @@ function createLogger(logFile, startTime = null) {
   return {
     debug: (message) => logDebug(logFile, message),
     error: (context, error) => logError(logFile, context, error),
-    time: (operation) => startTime ? logExecutionTime(logFile, operation, startTime) : null,
+    time: (operation) => (startTime ? logExecutionTime(logFile, operation, startTime) : null),
     json: (label, data, maxLength) => logJson(logFile, label, data, maxLength),
   };
 }

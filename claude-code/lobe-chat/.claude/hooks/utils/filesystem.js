@@ -73,9 +73,7 @@ async function matchesGlob(filePath, globPattern, logger) {
     const { stdout } = await execAsync(`bash -c '${script}'`);
     const result = stdout.trim() === 'match';
 
-    await logger.debug(
-      `Glob match test: "${relativePath}" against "${globPattern}" -> ${result}`,
-    );
+    await logger.debug(`Glob match test: "${relativePath}" against "${globPattern}" -> ${result}`);
     return result;
   } catch (error) {
     await logger.debug(`Error in glob matching: ${error.message}`);
@@ -169,6 +167,42 @@ async function readFileSafe(filePath, encoding = 'utf8') {
   }
 }
 
+/**
+ * Extract rule file references from CLAUDE.md content
+ * @param {string} claudeMdPath - Path to CLAUDE.md file
+ * @param {Object} logger - Logger instance
+ * @returns {Promise<Array<string>>} List of referenced rule file paths
+ */
+async function extractRulesFromClaudeMd(claudeMdPath, logger) {
+  const rules = new Set();
+
+  try {
+    const content = await readFileSafe(claudeMdPath);
+    if (!content) {
+      logger.debug(`Could not read CLAUDE.md at ${claudeMdPath}`);
+      return [];
+    }
+
+    // Pattern 1: @.cursor/rules/*.mdc format
+    const atRulePattern = /@\.cursor\/rules\/[a-zA-Z0-9_\-\/]+\.mdc/g;
+    const atRuleMatches = content.match(atRulePattern) || [];
+    atRuleMatches.forEach((match) => {
+      // Remove @ prefix and add to set
+      const rulePath = match.substring(1);
+      rules.add(rulePath);
+    });
+
+    const rulesList = Array.from(rules);
+    logger.debug(
+      `Extracted ${rulesList.length} rules from CLAUDE.md: ${JSON.stringify(rulesList)}`,
+    );
+    return rulesList;
+  } catch (error) {
+    logger.debug(`Error extracting rules from CLAUDE.md: ${error.message}`);
+    return [];
+  }
+}
+
 module.exports = {
   PROJECT_DIR,
   isPathInWorkspace,
@@ -178,4 +212,5 @@ module.exports = {
   fileExists,
   getFileStats,
   readFileSafe,
+  extractRulesFromClaudeMd,
 };

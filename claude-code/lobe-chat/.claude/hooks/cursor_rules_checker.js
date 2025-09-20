@@ -22,9 +22,9 @@ const execAsync = promisify(exec);
 
 // Import utils
 const { exitWithTime, hookMain, extractToolInfo, PROJECT_DIR } = require('./utils/core');
-const { extractFilePaths, matchesGlob } = require('./utils/filesystem');
-const { getReadFilesByType } = require('./utils/transcript');
-const { generateSystemReminder } = require('./utils/reminder');
+const { extractFilePaths, matchesGlob, extractRulesFromClaudeMd } = require('./utils/filesystem');
+const { checkFileHadRead } = require('./utils/transcript');
+const { generateSuggestionsReminder } = require('./utils/reminder');
 
 // Configuration
 const RULES_DIR = path.join(PROJECT_DIR, '.cursor', 'rules');
@@ -91,7 +91,6 @@ async function extractRuleInfo(rulePath, logger) {
   }
 }
 
-
 // Main hook processing logic
 async function processHook(toolData, logger) {
   const { toolName, toolInput, transcriptPath } = extractToolInfo(toolData);
@@ -131,8 +130,10 @@ async function processHook(toolData, logger) {
     return;
   }
 
-  // Get already read .mdc files from current session transcript
-  const readMdcFiles = await getReadFilesByType(transcriptPath, '.mdc', LOG_FILE);
+  // Check if CLAUDE.md has been read and extract its rules
+  const claudeMdPath = path.join(PROJECT_DIR, 'CLAUDE.md');
+  const claudeMdRules = await extractRulesFromClaudeMd(claudeMdPath, logger);
+  logger.debug(`CLAUDE.md rules: ${JSON.stringify(claudeMdRules)}`);
 
   // Check each file path against rule globs and collect all unread rules
   const unreadRules = [];
@@ -149,13 +150,29 @@ async function processHook(toolData, logger) {
       }
 
       for (const globPattern of ruleInfo.globs) {
-        const matches = await matchesGlob(filePath, globPattern, LOG_FILE);
+        const matches = await matchesGlob(filePath, globPattern, logger);
 
         if (matches) {
           await logger.debug(`File ${filePath} matches glob ${globPattern} in rule ${ruleFile}`);
 
-          // Check if this rule file has been read in current session
-          const hasBeenRead = readMdcFiles.includes(ruleFile);
+          // Check if rule is referenced in CLAUDE.md
+          const isInClaudeMd = claudeMdRules.some((rule) => {
+            const fullRulePath = path.resolve(PROJECT_DIR, rule);
+            return fullRulePath === ruleFile;
+          });
+
+          if (isInClaudeMd) {
+            await logger.debug(`Rule file ${ruleFile} is referenced in CLAUDE.md, allowing access`);
+            continue;
+          }
+
+          // Check if this rule file has been read before (excluding current if it's a Read)
+          const { hasBeenRead } = await checkFileHadRead(
+            transcriptPath,
+            ruleFile,
+            toolName,
+            logger,
+          );
 
           if (!hasBeenRead) {
             await logger.debug(`Rule file ${ruleFile} has not been read yet.`);
@@ -191,7 +208,7 @@ async function processHook(toolData, logger) {
       ruleFiles: relativeRuleFiles,
     };
 
-    const reminder = generateSystemReminder([suggestion]);
+    const reminder = generateSuggestionsReminder([suggestion]);
     process.stderr.write(reminder);
     await exitWithTime(2, 'blocked', logger);
     return;

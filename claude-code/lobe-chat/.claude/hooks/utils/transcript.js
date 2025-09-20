@@ -11,7 +11,7 @@ const execAsync = promisify(exec);
  * Get already read files from current session transcript
  * @param {string} transcriptPath - Path to transcript file
  * @param {Object} logger - Logger instance
- * @returns {Promise<Array<string>>} List of file paths that have been read
+ * @returns {Promise<Array<string>>} List of file paths that have been read (includes duplicates for counting)
  */
 async function getReadFiles(transcriptPath, logger) {
   const readFiles = [];
@@ -48,9 +48,12 @@ async function getReadFiles(transcriptPath, logger) {
       }
     }
 
+    // Return all occurrences without deduplication for accurate counting
+    await logger.debug(`Already read files in session (with duplicates): ${JSON.stringify(readFiles)}`);
+    // Also log unique files for reference
     const uniqueReadFiles = [...new Set(readFiles)];
-    await logger.debug(`Already read files in session: ${JSON.stringify(uniqueReadFiles)}`);
-    return uniqueReadFiles;
+    await logger.debug(`Unique read files in session: ${JSON.stringify(uniqueReadFiles)}`);
+    return readFiles;  // Return the full list with duplicates
   } catch (error) {
     await logger.debug(`Error checking transcript for read files: ${error.message}`);
     return readFiles;
@@ -62,10 +65,11 @@ async function getReadFiles(transcriptPath, logger) {
  * @param {string} transcriptPath - Path to transcript file
  * @param {string} extension - File extension to filter (e.g., '.mdc')
  * @param {Object} logger - Logger instance
- * @returns {Promise<Array<string>>} List of file paths with specified extension
+ * @returns {Promise<Array<string>>} List of file paths with specified extension (includes duplicates, caller should deduplicate if needed)
  */
 async function getReadFilesByType(transcriptPath, extension, logger) {
   const allReadFiles = await getReadFiles(transcriptPath, logger);
+  // Filter by extension (no deduplication, let caller decide)
   return allReadFiles.filter(file => file.endsWith(extension));
 }
 
@@ -144,9 +148,45 @@ async function hasExecutedTool(transcriptPath, toolName, inputMatcher, logger) {
   });
 }
 
+/**
+ * Check if a file has been read before (excluding current operation if it's a Read)
+ * @param {string} transcriptPath - Path to transcript file
+ * @param {string} filePath - File path to check
+ * @param {string} currentToolName - Name of the current tool being executed
+ * @param {Object} logger - Logger instance
+ * @returns {Promise<Object>} Object with { hasBeenRead: boolean, readCount: number, previousReadCount: number }
+ */
+async function checkFileHadRead(transcriptPath, filePath, currentToolName, logger) {
+  const allReadFiles = await getReadFiles(transcriptPath, logger);
+
+  // Count total occurrences of this file
+  const totalReadCount = allReadFiles.filter(f => f === filePath).length;
+
+  // If current tool is Read, the last occurrence might be the current operation
+  // We need to exclude it to get the "previous" read count
+  let previousReadCount = totalReadCount;
+
+  if (currentToolName === 'Read' && totalReadCount > 0) {
+    // If current operation is a Read, subtract 1 to get previous read count
+    // This assumes the current Read is already in the transcript
+    previousReadCount = totalReadCount - 1;
+  }
+
+  const hasBeenRead = previousReadCount > 0;
+
+  await logger.debug(`File ${filePath} check: total reads = ${totalReadCount}, previous reads = ${previousReadCount}, has been read before = ${hasBeenRead}`);
+
+  return {
+    hasBeenRead,
+    readCount: totalReadCount,
+    previousReadCount,
+  };
+}
+
 module.exports = {
   getReadFiles,
   getReadFilesByType,
   getExecutedTools,
   hasExecutedTool,
+  checkFileHadRead,
 };

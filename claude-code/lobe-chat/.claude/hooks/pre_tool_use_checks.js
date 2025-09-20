@@ -17,7 +17,7 @@ const { parseMvCommand } = require('./utils/command');
 const { generateSystemReminder } = require('./utils/reminder');
 
 // Configuration
-const LOG_FILE = 'preToolUseChecks.log';
+const LOG_FILE = 'pre_tool_use_checks.log';
 
 // Check if mv command is being used for file renaming
 function checkMvCommand(command) {
@@ -52,21 +52,8 @@ async function performChecks(toolName, toolInput, logger) {
     return issues;
   }
 
-  // Check 1: mv command detection
-  const mvCheck = checkMvCommand(command);
-  if (mvCheck) {
-    await logger.debug(`Detected mv rename: ${mvCheck.sourceFile} -> ${mvCheck.targetFile}`);
-
-    if (mvCheck.isWorkspaceFile) {
-      issues.push({
-        type: 'mv_rename_suggestion',
-        command,
-        sourceFile: mvCheck.sourceFile,
-        targetFile: mvCheck.targetFile,
-        suggestion: 'VSCode MCP renameFile 命令可以自动更新导入引用',
-      });
-    }
-  }
+  // Check 1:
+  // TODO: add some checks here
 
   // Future checks can be added here:
   // - Check 2: other command patterns

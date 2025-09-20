@@ -8,6 +8,69 @@ This is the user level guide for Codex.
 - Prefer English for coding, eg: code comments, ui text, commit message, pr description, etc.
 - You can call me `靖哥`
 
+## Output Style
+
+### Core Principles
+
+- Lead with concise conclusions (1-2 sentences). For questions, provide the core answer first. For code tasks, start with a brief work summary.
+- Go straight to the topic rather than exhaustively listing all findings during the analysis step.
+- When analyzing issues, always provide at least one recommended solution
+- Each long paragraph (include list item) should be followed by **two** newline characters for better readability.
+- Organize with **headings**, not **bullets**. Use proper heading hierarchy for main sections instead of top-level unordered lists
+
+### Use Emojis Appropriately for Better Readability and Engagement
+
+- **Use emojis functionally to enhance readability, not as decoration**:
+  - ✅ Status indicators (completion, success, confirmation)
+  - ❌ Errors, failures, or things to avoid
+  - 🎯 Key conclusions or main points
+  - ⚠️ Important warnings or considerations
+  - 💡 Tips, insights, or helpful notes
+  - 🔧 Action items, tools, or implementation steps
+  - 🔍 Analysis, investigation, or detailed examination
+  - 📝 Documentation, examples, or code snippets
+  - 🚀 Performance improvements or optimizations
+  - 🐛 Bug fixes or debugging information
+  - 🔄 Process flows, workflows, or iterations
+  - 📊 Data, statistics, or metrics
+  - 🎨 UI/UX improvements or design changes
+  - ⭐️ Recommendation levels (1-5 stars) **only** when providing **multiple** solutions
+  - 🔴 🟡 🟢 💭 Priority levels: critical/strong suggestion/optimization/discussion, use with **section headings** to group items by priority
+- **Place emojis at the beginning of descriptions** for better visual scanning (e.g., `🔧 Tool Overview` not `Tool Overview 🔧`)
+- **Use emojis sparingly** - typically only in section headings
+- **Mandatory**: Except for ✅❌ in todo lists, avoid **repeating** the same emoji multiple times in one response
+
+analysis issue example:
+
+```markdown
+**🎯 结论**: 用一句话简要总结解决方案和结果。
+
+### 🔍 问题分析
+
+根本原因分析，包含技术背景和约束条件。
+
+### 🔧 解决方案
+
+1. **方案 A** (⭐️⭐️⭐️⭐️⭐️ 推荐): 实现方法及其优缺点。
+2. **方案 B** (⭐️⭐️⭐️): 替代方案及其权衡考虑。
+3. **方案 C** (⭐️⭐️): 约束条件变化时的备选方案。
+
+### 📊 工作总结
+
+- ✅ 分析了根本原因并确定了 3 个可行解决方案
+- ✅ 实现了方案 A 并添加了错误处理
+- ✅ 添加了全面的测试和文档
+
+### ⚠️ 重要说明
+
+在实现或维护过程中需要注意的关键考虑事项。
+
+### 🔗 参考资料
+
+- API 文档: https://example.com/api-docs
+- 实现代码: `src/services/handler.ts:42`
+```
+
 ## Code Comments
 
 ### Must comment scenarios
@@ -55,11 +118,6 @@ async function deactivateSubscription(subscriptionId: string) {
   // other front code...
   // New design: Don't delete budget on cancellation, control access via subscription status
 }
-
-// ✅ Good: Use `1.`
-// 1. step1
-// ❌ Bad: Use `1)`
-// 1) step1
 ```
 
 ## Development Guidelines

@@ -15,10 +15,10 @@ const fs = require('fs').promises;
 // Import utils
 const { exitWithTime, hookMain, extractToolInfo } = require('./utils/core');
 const { checkGrepUsage } = require('./utils/command');
-const { generateSystemReminder } = require('./utils/reminder');
+const { generateSuggestionsReminder } = require('./utils/reminder');
 
 // Configuration
-const LOG_FILE = 'postToolUseChecks.log';
+const LOG_FILE = 'post_tool_use_checks.log';
 
 // Check if WebFetch is accessing GitHub content that could use gh CLI
 function checkWebFetchGitHub(url) {
@@ -180,7 +180,7 @@ async function processHook(toolData, logger) {
     await logger.debug(`Found ${suggestions.length} optimization suggestion(s)`);
 
     // Generate and output system reminder
-    const reminder = generateSystemReminder(suggestions);
+    const reminder = generateSuggestionsReminder(suggestions);
     process.stderr.write(reminder);
 
     await exitWithTime(2, 'suggestions-provided', logger);

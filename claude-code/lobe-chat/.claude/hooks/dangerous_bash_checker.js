@@ -61,7 +61,7 @@ async function checkDangerousCommand(command, logger) {
             hasDangerousFiles = true;
           } else {
             // File in workspace, check git status
-            const isTracked = await isFileTrackedByGit(filePath, LOG_FILE);
+            const isTracked = await isFileTrackedByGit(filePath, logger);
             await logger.debug(`File ${filePath} tracked by git: ${isTracked}`);
 
             if (!isTracked) {

@@ -10,21 +10,27 @@
  */
 
 const { hookMain, exitWithTime, extractToolInfo } = require('./utils/core');
-const { getReadFiles } = require('./utils/transcript');
+const { checkFileHadRead } = require('./utils/transcript');
 const { getFileLineCount } = require('./utils/filesystem');
 
 const LOG_FILE = 'read_completeness.log';
 
 // Helper function to send system reminder message
-function sendReminderMessage(reason, filePath, totalLines) {
+function sendReminderMessage(offset, limit, filePath, totalLines) {
   const reminder = `<system-reminder>
-读取规则违规：文件 ${filePath} (${totalLines} 行) ${reason}。
+读取文件违规：
+
+- 你是第一次度读取文件 ${filePath}
+- 它总共 ${totalLines} 行，小于 500 行
+- 但是你只读取了从 ${offset} 到开始的共 ${limit} 行，没有读取完整
+
 请重新完整读取该文件以获得完整上下文。
 </system-reminder>`;
   process.stderr.write(reminder);
 }
 
 async function processHook(toolData, logger) {
+  logger.debug(`toolData: ${JSON.stringify(toolData, null, 2)}`);
   const { toolName, toolInput, transcriptPath } = extractToolInfo(toolData);
 
   // Only check Read tool calls
@@ -73,19 +79,27 @@ async function processHook(toolData, logger) {
     return;
   }
 
-  // Check if this is the first read of the file
-  const readFiles = await getReadFiles(transcriptPath, logger);
-  const hasBeenRead = readFiles.includes(filePath);
+  // Check if this file has been read before (excluding current operation)
+  const { hasBeenRead, readCount, previousReadCount } = await checkFileHadRead(
+    transcriptPath,
+    filePath,
+    toolName,
+    logger,
+  );
 
   if (hasBeenRead) {
-    await logger.debug(`File has been read before, partial read allowed`);
+    await logger.debug(
+      `File has been read before (${previousReadCount} previous reads), partial read allowed`,
+    );
     await exitWithTime(0, 'already-read', logger);
     return;
   }
 
+  await logger.debug(`First read of file (total count in transcript: ${readCount})`);
+
   // First time reading a small file with partial read - block it
   await logger.debug(`Rule violation: First read of file < 500 lines with partial read`);
-  sendReminderMessage('小于 500 行，必须完整读取', filePath, lineCount);
+  sendReminderMessage(offset, limit, filePath, lineCount);
   await exitWithTime(2, 'blocked', logger);
 }
 
